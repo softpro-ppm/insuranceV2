@@ -10,10 +10,10 @@
                     </span>
             </a>
             <a href="home.php" class="logo logo-light"> <span class="logo-sm">
-                        <h3 style="color:#fff;margin-top: 20px;font-weight: bold;" height="22">SOFTPRO v2</h3>
+                        <h3 style="color:#fff;margin-top: 20px;font-weight: bold;" height="22">SOFTPRO 2.0</h3>
                     </span>
                 <span class="logo-lg">
-                        <h3 style="color:#fff;margin-top: 20px;font-weight: bold;" height="19">SOFTPRO V2</h3>
+                        <h3 style="color:#fff;margin-top: 20px;font-weight: bold;" height="19">SOFTPRO 2.0</h3>
                     </span>
             </a>
         </div>
