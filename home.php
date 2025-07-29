@@ -92,7 +92,7 @@
                                     </div>
                                 </div>
                                 <?php  
-                                     $renewalsql = mysqli_query($con, "select * from history where month(policy_end_date) >='".date("m")."' and year(policy_end_date)='".date("Y")."' GROUP BY vehicle_number ");
+                                     $renewalsql = mysqli_query($con, "select * from policy where month(policy_end_date) ='".date("m")."' and year(policy_end_date)='".date("Y")."' ");
                                      
                                     //  $renewalsql = mysqli_query($con, "select * from policy where month(policy_end_date)='".date('m')."' and year(policy_end_date)='".date('Y')."' ");
                                     
