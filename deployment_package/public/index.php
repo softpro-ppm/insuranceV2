@@ -11,8 +11,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Include configuration
-require_once __DIR__ . '/config/app.php';
-require_once __DIR__ . '/app/Database.php';
+require_once __DIR__ . '/../config/app.php';
+require_once __DIR__ . '/../app/Database.php';
 
 // Simple Router Class
 class Router {
@@ -70,14 +70,14 @@ function view($template, $data = []) {
     extract($data);
     
     ob_start();
-    include __DIR__ . "/resources/views/{$template}.php";
+    include __DIR__ . "/../resources/views/{$template}.php";
     $content = ob_get_clean();
     
     // If it's not a layout file, wrap it in the main layout
     if (strpos($template, 'layouts/') !== 0 && strpos($template, 'auth/') !== 0) {
         $data['content'] = $content;
         extract($data);
-        include __DIR__ . '/resources/views/layouts/app.php';
+        include __DIR__ . '/../resources/views/layouts/app.php';
     } else {
         echo $content;
     }
@@ -217,10 +217,85 @@ $router->get('/policies/create', function() {
 $router->post('/policies/store', function() {
     requireAuth();
     
-    // This will be implemented in the next step
-    $_SESSION['success'] = 'Policy created successfully!';
-    header('Location: /policies');
-    exit;
+    try {
+        $db = Database::getInstance();
+        
+        // Get form data
+        $category = $_POST['category'] ?? '';
+        $customer_id = $_POST['customer_id'] ?? '';
+        $insurance_company_id = $_POST['insurance_company_id'] ?? '';
+        $policy_type_id = $_POST['policy_type_id'] ?? '';
+        $policy_start_date = $_POST['policy_start_date'] ?? '';
+        $policy_end_date = $_POST['policy_end_date'] ?? '';
+        $premium_amount = $_POST['premium_amount'] ?? 0;
+        $sum_insured = $_POST['sum_insured'] ?? 0;
+        
+        // Generate policy number
+        $policy_number = 'POL' . date('Y') . sprintf('%06d', rand(1, 999999));
+        
+        // Prepare base data
+        $data = [
+            'policy_number' => $policy_number,
+            'customer_id' => $customer_id,
+            'insurance_company_id' => $insurance_company_id,
+            'policy_type_id' => $policy_type_id,
+            'category' => $category,
+            'policy_start_date' => $policy_start_date,
+            'policy_end_date' => $policy_end_date,
+            'premium_amount' => $premium_amount,
+            'sum_insured' => $sum_insured,
+            'agent_id' => $_SESSION['user_id']
+        ];
+        
+        // Add category-specific fields
+        if ($category === 'motor') {
+            $data['vehicle_number'] = $_POST['vehicle_number'] ?? '';
+            $data['vehicle_type'] = $_POST['vehicle_type'] ?? '';
+            $data['vehicle_make'] = $_POST['vehicle_make'] ?? '';
+            $data['vehicle_model'] = $_POST['vehicle_model'] ?? '';
+            $data['vehicle_year'] = $_POST['vehicle_year'] ?? '';
+            $data['engine_number'] = $_POST['engine_number'] ?? '';
+            $data['chassis_number'] = $_POST['chassis_number'] ?? '';
+            $data['fuel_type'] = $_POST['fuel_type'] ?? '';
+        } elseif ($category === 'health') {
+            $data['plan_name'] = $_POST['plan_name'] ?? '';
+            $data['coverage_type'] = $_POST['coverage_type'] ?? '';
+            $data['room_rent_limit'] = $_POST['room_rent_limit'] ?? 0;
+            $data['pre_existing_diseases'] = $_POST['pre_existing_diseases'] ?? '';
+        } elseif ($category === 'life') {
+            $data['policy_term'] = $_POST['policy_term'] ?? 0;
+            $data['premium_payment_term'] = $_POST['premium_payment_term'] ?? 0;
+            $data['maturity_amount'] = $_POST['maturity_amount'] ?? 0;
+            $data['death_benefit'] = $_POST['death_benefit'] ?? 0;
+        }
+        
+        // Calculate commission
+        $commission_percentage = $_POST['commission_percentage'] ?? 10;
+        $data['commission_percentage'] = $commission_percentage;
+        $data['commission_amount'] = ($premium_amount * $commission_percentage) / 100;
+        
+        // Build query
+        $columns = implode(', ', array_keys($data));
+        $placeholders = ':' . implode(', :', array_keys($data));
+        $sql = "INSERT INTO policies ($columns) VALUES ($placeholders)";
+        
+        $stmt = $db->prepare($sql);
+        $result = $stmt->execute($data);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Policy ' . $policy_number . ' created successfully!';
+            header('Location: /policies');
+            exit;
+        } else {
+            $_SESSION['error'] = 'Failed to create policy';
+            header('Location: /policies/create');
+            exit;
+        }
+    } catch (Exception $e) {
+        $_SESSION['error'] = 'Error: ' . $e->getMessage();
+        header('Location: /policies/create');
+        exit;
+    }
 });
 
 $router->get('/customers', function() {
@@ -234,6 +309,40 @@ $router->get('/customers', function() {
             ['title' => 'Customers', 'url' => '/customers']
         ]
     ]);
+});
+
+// API endpoints for AJAX requests
+$router->get('/api/customers', function() {
+    requireAuth();
+    header('Content-Type: application/json');
+    
+    $db = Database::getInstance();
+    $customers = $db->fetchAll("SELECT id, customer_code, name, phone FROM customers ORDER BY name");
+    echo json_encode($customers);
+    exit;
+});
+
+$router->get('/api/policy-types', function() {
+    requireAuth();
+    header('Content-Type: application/json');
+    
+    $category = $_GET['category'] ?? 'motor';
+    $db = Database::getInstance();
+    $policy_types = $db->fetchAll("SELECT id, name, code FROM policy_types WHERE category = ? AND status = 'active'", [$category]);
+    echo json_encode($policy_types);
+    exit;
+});
+
+$router->get('/api/insurance-companies', function() {
+    requireAuth();
+    header('Content-Type: application/json');
+    
+    $category = $_GET['category'] ?? 'motor';
+    $column = 'supports_' . $category;
+    $db = Database::getInstance();
+    $companies = $db->fetchAll("SELECT id, name, code FROM insurance_companies WHERE $column = 1 AND status = 'active'");
+    echo json_encode($companies);
+    exit;
 });
 
 $router->get('/renewals', function() {
