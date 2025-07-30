@@ -194,8 +194,12 @@
                         <div class="container-fluid">
                             <ol class="breadcrumb mb-0">
                                 <?php if (isset($breadcrumbs)): ?>
+                                    <?php 
+                                    $breadcrumb_keys = array_keys($breadcrumbs);
+                                    $last_key = end($breadcrumb_keys);
+                                    ?>
                                     <?php foreach ($breadcrumbs as $key => $breadcrumb): ?>
-                                        <?php if ($key === array_key_last($breadcrumbs)): ?>
+                                        <?php if ($key === $last_key): ?>
                                             <li class="breadcrumb-item active"><?= htmlspecialchars($breadcrumb['title']) ?></li>
                                         <?php else: ?>
                                             <li class="breadcrumb-item">
