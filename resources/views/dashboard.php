@@ -1,33 +1,67 @@
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-dark mb-0">Dashboard</h2>
-            <div>
-                <span class="text-muted">Welcome back, <?= $_SESSION['user_name'] ?? 'Admin' ?>!</span>
-            </div>
-        </div>
-    </div>
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Welcome back! Here's what's happening with your insurance business today.</p>
 </div>
 
 <!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3 mb-3">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title text-white-50 mb-1">Total Policies</h5>
-                        <h2 class="text-white mb-0"><?= number_format($stats['total_policies']) ?></h2>
-                    </div>
-                    <div class="text-white-50">
-                        <i class="fas fa-file-contract fa-2x"></i>
-                    </div>
-                </div>
+<div class="row g-4 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card primary">
+            <div class="stat-icon primary">
+                <i class="fas fa-file-contract"></i>
+            </div>
+            <div class="stat-number"><?= number_format($stats['total_policies'] ?? 0) ?></div>
+            <div class="stat-label">Total Policies</div>
+            <div class="d-flex align-items-center mt-2">
+                <i class="fas fa-arrow-up text-success me-1"></i>
+                <small class="text-success">+12% from last month</small>
             </div>
         </div>
     </div>
     
-    <div class="col-md-3 mb-3">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card success">
+            <div class="stat-icon success">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-number"><?= number_format($stats['total_customers'] ?? 0) ?></div>
+            <div class="stat-label">Total Customers</div>
+            <div class="d-flex align-items-center mt-2">
+                <i class="fas fa-arrow-up text-success me-1"></i>
+                <small class="text-success">+8% from last month</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card warning">
+            <div class="stat-icon warning">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-number"><?= number_format($stats['expiring_soon'] ?? 0) ?></div>
+            <div class="stat-label">Expiring Soon</div>
+            <div class="d-flex align-items-center mt-2">
+                <i class="fas fa-clock text-warning me-1"></i>
+                <small class="text-warning">Next 30 days</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card info">
+            <div class="stat-icon info">
+                <i class="fas fa-rupee-sign"></i>
+            </div>
+            <div class="stat-number">₹<?= number_format($stats['total_premium'] ?? 0) ?></div>
+            <div class="stat-label">Total Premium</div>
+            <div class="d-flex align-items-center mt-2">
+                <i class="fas fa-arrow-up text-success me-1"></i>
+                <small class="text-success">Monthly revenue</small>
+            </div>
+        </div>
+    </div>
+</div>
         <div class="card stats-card success">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
