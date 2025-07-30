@@ -301,14 +301,294 @@ $router->post('/policies/store', function() {
 $router->get('/customers', function() {
     requireAuth();
     
+    $db = Database::getInstance();
+    
+    // Get search and filter parameters
+    $search = $_GET['search'] ?? '';
+    $status = $_GET['status'] ?? '';
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $limit = 20;
+    $offset = ($page - 1) * $limit;
+    
+    // Build query with filters
+    $where = "WHERE 1=1";
+    $params = [];
+    
+    if (!empty($search)) {
+        $where .= " AND (c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR c.customer_code LIKE ?)";
+        $searchTerm = '%' . $search . '%';
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+    }
+    
+    // Get customers with policy count
+    $customers = $db->fetchAll("
+        SELECT c.*, 
+               COUNT(p.id) as policy_count,
+               u.name as created_by_name
+        FROM customers c 
+        LEFT JOIN policies p ON c.id = p.customer_id 
+        LEFT JOIN users u ON c.created_by = u.id
+        $where
+        GROUP BY c.id 
+        ORDER BY c.created_at DESC 
+        LIMIT $limit OFFSET $offset
+    ", $params);
+    
+    // Get total count for pagination
+    $totalCount = $db->fetch("SELECT COUNT(*) as count FROM customers c $where", $params)['count'];
+    $totalPages = ceil($totalCount / $limit);
+    
     view('customers/index', [
         'title' => 'Customers - Insurance Management System',
         'current_page' => 'customers',
         'breadcrumbs' => [
             ['title' => 'Dashboard', 'url' => '/dashboard'],
             ['title' => 'Customers', 'url' => '/customers']
+        ],
+        'customers' => $customers,
+        'search' => $search,
+        'currentPage' => $page,
+        'totalPages' => $totalPages,
+        'totalCount' => $totalCount
+    ]);
+});
+
+$router->get('/customers/create', function() {
+    requireAuth();
+    
+    view('customers/create', [
+        'title' => 'Add New Customer - Insurance Management System',
+        'current_page' => 'customers',
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Customers', 'url' => '/customers'],
+            ['title' => 'Add Customer', 'url' => '/customers/create']
         ]
     ]);
+});
+
+$router->post('/customers/store', function() {
+    requireAuth();
+    
+    try {
+        $db = Database::getInstance();
+        
+        // Validate required fields
+        $required = ['name', 'phone'];
+        foreach ($required as $field) {
+            if (empty($_POST[$field])) {
+                $_SESSION['error'] = 'Please fill in all required fields';
+                header('Location: /customers/create');
+                exit;
+            }
+        }
+        
+        // Generate customer code
+        $customer_code = 'CUST' . date('Y') . sprintf('%05d', rand(1, 99999));
+        
+        // Check if customer code already exists
+        while ($db->fetch("SELECT id FROM customers WHERE customer_code = ?", [$customer_code])) {
+            $customer_code = 'CUST' . date('Y') . sprintf('%05d', rand(1, 99999));
+        }
+        
+        $data = [
+            'customer_code' => $customer_code,
+            'name' => $_POST['name'],
+            'email' => $_POST['email'] ?? null,
+            'phone' => $_POST['phone'],
+            'alternate_phone' => $_POST['alternate_phone'] ?? null,
+            'date_of_birth' => $_POST['date_of_birth'] ?? null,
+            'gender' => $_POST['gender'] ?? null,
+            'address' => $_POST['address'] ?? null,
+            'city' => $_POST['city'] ?? null,
+            'state' => $_POST['state'] ?? null,
+            'pincode' => $_POST['pincode'] ?? null,
+            'aadhar_number' => $_POST['aadhar_number'] ?? null,
+            'pan_number' => $_POST['pan_number'] ?? null,
+            'created_by' => $_SESSION['user_id']
+        ];
+        
+        $columns = implode(', ', array_keys($data));
+        $placeholders = ':' . implode(', :', array_keys($data));
+        $sql = "INSERT INTO customers ($columns) VALUES ($placeholders)";
+        
+        $stmt = $db->prepare($sql);
+        $result = $stmt->execute($data);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Customer ' . $customer_code . ' created successfully!';
+            header('Location: /customers');
+        } else {
+            $_SESSION['error'] = 'Failed to create customer';
+            header('Location: /customers/create');
+        }
+    } catch (Exception $e) {
+        $_SESSION['error'] = 'Error: ' . $e->getMessage();
+        header('Location: /customers/create');
+    }
+    exit;
+});
+
+$router->get('/customers/{id}', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    
+    // Get customer details
+    $customer = $db->fetch("
+        SELECT c.*, u.name as created_by_name 
+        FROM customers c 
+        LEFT JOIN users u ON c.created_by = u.id 
+        WHERE c.id = ?
+    ", [$id]);
+    
+    if (!$customer) {
+        $_SESSION['error'] = 'Customer not found';
+        header('Location: /customers');
+        exit;
+    }
+    
+    // Get customer's policies
+    $policies = $db->fetchAll("
+        SELECT p.*, ic.name as company_name, pt.name as policy_type_name
+        FROM policies p 
+        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
+        LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
+        WHERE p.customer_id = ? 
+        ORDER BY p.created_at DESC
+    ", [$id]);
+    
+    view('customers/show', [
+        'title' => $customer['name'] . ' - Customer Details',
+        'current_page' => 'customers',
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Customers', 'url' => '/customers'],
+            ['title' => $customer['name'], 'url' => '/customers/' . $id]
+        ],
+        'customer' => $customer,
+        'policies' => $policies
+    ]);
+});
+
+$router->get('/customers/{id}/edit', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $customer = $db->fetch("SELECT * FROM customers WHERE id = ?", [$id]);
+    
+    if (!$customer) {
+        $_SESSION['error'] = 'Customer not found';
+        header('Location: /customers');
+        exit;
+    }
+    
+    view('customers/edit', [
+        'title' => 'Edit ' . $customer['name'] . ' - Customer Management',
+        'current_page' => 'customers',
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Customers', 'url' => '/customers'],
+            ['title' => $customer['name'], 'url' => '/customers/' . $id],
+            ['title' => 'Edit', 'url' => '/customers/' . $id . '/edit']
+        ],
+        'customer' => $customer
+    ]);
+});
+
+$router->post('/customers/{id}/update', function($id) {
+    requireAuth();
+    
+    try {
+        $db = Database::getInstance();
+        
+        // Check if customer exists
+        $customer = $db->fetch("SELECT * FROM customers WHERE id = ?", [$id]);
+        if (!$customer) {
+            $_SESSION['error'] = 'Customer not found';
+            header('Location: /customers');
+            exit;
+        }
+        
+        // Validate required fields
+        $required = ['name', 'phone'];
+        foreach ($required as $field) {
+            if (empty($_POST[$field])) {
+                $_SESSION['error'] = 'Please fill in all required fields';
+                header('Location: /customers/' . $id . '/edit');
+                exit;
+            }
+        }
+        
+        $data = [
+            'name' => $_POST['name'],
+            'email' => $_POST['email'] ?? null,
+            'phone' => $_POST['phone'],
+            'alternate_phone' => $_POST['alternate_phone'] ?? null,
+            'date_of_birth' => $_POST['date_of_birth'] ?? null,
+            'gender' => $_POST['gender'] ?? null,
+            'address' => $_POST['address'] ?? null,
+            'city' => $_POST['city'] ?? null,
+            'state' => $_POST['state'] ?? null,
+            'pincode' => $_POST['pincode'] ?? null,
+            'aadhar_number' => $_POST['aadhar_number'] ?? null,
+            'pan_number' => $_POST['pan_number'] ?? null,
+        ];
+        
+        $setParts = [];
+        foreach ($data as $key => $value) {
+            $setParts[] = "$key = :$key";
+        }
+        $setClause = implode(', ', $setParts);
+        
+        $sql = "UPDATE customers SET $setClause WHERE id = :id";
+        $data['id'] = $id;
+        
+        $stmt = $db->prepare($sql);
+        $result = $stmt->execute($data);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Customer updated successfully!';
+            header('Location: /customers/' . $id);
+        } else {
+            $_SESSION['error'] = 'Failed to update customer';
+            header('Location: /customers/' . $id . '/edit');
+        }
+    } catch (Exception $e) {
+        $_SESSION['error'] = 'Error: ' . $e->getMessage();
+        header('Location: /customers/' . $id . '/edit');
+    }
+    exit;
+});
+
+$router->post('/customers/{id}/delete', function($id) {
+    requireAuth();
+    
+    try {
+        $db = Database::getInstance();
+        
+        // Check if customer has policies
+        $policyCount = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE customer_id = ?", [$id])['count'];
+        
+        if ($policyCount > 0) {
+            $_SESSION['error'] = 'Cannot delete customer. Customer has ' . $policyCount . ' active policies.';
+            header('Location: /customers/' . $id);
+            exit;
+        }
+        
+        $result = $db->execute("DELETE FROM customers WHERE id = ?", [$id]);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Customer deleted successfully!';
+        } else {
+            $_SESSION['error'] = 'Failed to delete customer';
+        }
+    } catch (Exception $e) {
+        $_SESSION['error'] = 'Error: ' . $e->getMessage();
+    }
+    
+    header('Location: /customers');
+    exit;
 });
 
 // API endpoints for AJAX requests

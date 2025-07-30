@@ -56,6 +56,10 @@ class Database {
         return $this->query($sql, $params)->rowCount();
     }
     
+    public function prepare($sql) {
+        return $this->connection->prepare($sql);
+    }
+    
     public function lastInsertId() {
         return $this->connection->lastInsertId();
     }
