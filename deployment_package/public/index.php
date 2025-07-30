@@ -10,8 +10,8 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Include configuration
-require_once __DIR__ . '/../config/app.php';
+// Include configuration and database
+$config = require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/Database.php';
 
 // Simple Router Class

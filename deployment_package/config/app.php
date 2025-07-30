@@ -1,6 +1,13 @@
 <?php
 /**
- * Insurance Management System v2.0
+ *     // Session configuration
+    'session' => [
+        'lifetime' => 120, // minutes
+        'expire_on_close' => false,
+        'encrypt' => false,
+        'files' => sys_get_temp_dir(), // Use system temp directory
+        'cookie' => 'insurance_session',
+    ],e Management System v2.0
  * Application Configuration
  */
 
