@@ -2,7 +2,7 @@
 -- Creates 500 customers, 700 policies, and 3 agents with comprehensive dummy data
 
 -- First, let's add more insurance companies (based on Indian market)
-INSERT INTO insurance_companies (name, code, supports_motor, supports_health, supports_life, contact_email, contact_phone, website) VALUES 
+INSERT IGNORE INTO insurance_companies (name, code, supports_motor, supports_health, supports_life, contact_email, contact_phone, website) VALUES 
 ('ICICI Lombard General Insurance', 'ICICI', TRUE, TRUE, FALSE, 'support@icicilombard.com', '1800-2666', 'www.icicilombard.com'),
 ('HDFC ERGO General Insurance', 'HDFC', TRUE, TRUE, FALSE, 'customercare@hdfcergo.com', '1800-2700', 'www.hdfcergo.com'),
 ('Bajaj Allianz General Insurance', 'BAJAJ', TRUE, TRUE, TRUE, 'bagichelp@bajajallianz.co.in', '1800-209-5858', 'www.bajajallianz.com'),
@@ -24,8 +24,8 @@ INSERT INTO insurance_companies (name, code, supports_motor, supports_health, su
 ('Royal Sundaram General Insurance', 'ROYAL', TRUE, TRUE, FALSE, 'customercare@royalsundaram.in', '1800-568-9999', 'www.royalsundaram.in'),
 ('Digit General Insurance', 'DIGIT', TRUE, TRUE, FALSE, 'hello@godigit.com', '1800-258-4242', 'www.godigit.com');
 
--- Create 3 agent users
-INSERT INTO users (name, email, username, password, phone, role, status) VALUES
+-- Create 3 agent users with hashed passwords
+INSERT IGNORE INTO users (name, email, username, password, phone, role, status) VALUES
 ('Rajesh Kumar', 'rajesh.agent@softpromis.com', '9876543210', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543210', 'agent', 'active'),
 ('Priya Sharma', 'priya.agent@softpromis.com', '9876543211', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543211', 'agent', 'active'),
 ('Amit Singh', 'amit.agent@softpromis.com', '9876543212', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543212', 'agent', 'active');

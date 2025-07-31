@@ -38,46 +38,32 @@ if ($_POST['action'] ?? '' === 'init_db') {
         
         // Execute seed data if main database setup was successful
         if (empty($errors)) {
-            $seed_file = __DIR__ . '/database/seed_data.sql';
+            $seed_file = __DIR__ . '/database/simple_seed_data.sql';
             if (file_exists($seed_file)) {
                 $seed_content = file_get_contents($seed_file);
                 if ($seed_content) {
                     $success[] = "Executing seed data script...";
                     
-                    // For seed data, we need to handle stored procedures differently
-                    $seed_queries = explode('DELIMITER', $seed_content);
+                    // Split into individual queries for simple seed data
+                    $seed_queries = array_filter(array_map('trim', explode(';', $seed_content)));
                     
-                    foreach ($seed_queries as $section) {
-                        $section = trim($section);
-                        if (empty($section)) continue;
-                        
-                        if (strpos($section, '//') !== false) {
-                            // This is a stored procedure section
-                            $procedure_queries = explode('//', $section);
-                            foreach ($procedure_queries as $proc_query) {
-                                $proc_query = trim($proc_query);
-                                if (!empty($proc_query) && substr($proc_query, 0, 2) !== '--') {
-                                    if (mysqli_query($conn, $proc_query)) {
-                                        $success[] = "Executed procedure section";
-                                    } else {
-                                        $errors[] = "Procedure error: " . mysqli_error($conn);
+                    foreach ($seed_queries as $query) {
+                        if (!empty($query) && substr($query, 0, 2) !== '--') {
+                            if (mysqli_query($conn, $query)) {
+                                if (strpos($query, 'SELECT') === 0) {
+                                    // It's a select query, get the result
+                                    $result = mysqli_query($conn, $query);
+                                    if ($result && $row = mysqli_fetch_assoc($result)) {
+                                        $success[] = "Stats: " . implode(', ', $row);
                                     }
+                                } else {
+                                    $success[] = "Executed: " . substr($query, 0, 50) . "...";
                                 }
-                            }
-                        } else {
-                            // Regular SQL queries
-                            $regular_queries = array_filter(array_map('trim', explode(';', $section)));
-                            foreach ($regular_queries as $query) {
-                                if (!empty($query) && substr($query, 0, 2) !== '--') {
-                                    if (mysqli_query($conn, $query)) {
-                                        $success[] = "Executed: " . substr($query, 0, 50) . "...";
-                                    } else {
-                                        $error_msg = mysqli_error($conn);
-                                        // Ignore "table already exists" errors for seed data
-                                        if (strpos($error_msg, 'already exists') === false) {
-                                            $errors[] = "Failed: " . $error_msg . " - " . substr($query, 0, 50);
-                                        }
-                                    }
+                            } else {
+                                $error_msg = mysqli_error($conn);
+                                // Ignore duplicate entry errors for seed data
+                                if (strpos($error_msg, 'Duplicate entry') === false && strpos($error_msg, 'already exists') === false) {
+                                    $errors[] = "Failed: " . $error_msg . " - " . substr($query, 0, 50);
                                 }
                             }
                         }
@@ -88,12 +74,14 @@ if ($_POST['action'] ?? '' === 'init_db') {
         
         if (empty($errors)) {
             $success[] = "Database initialization completed successfully!";
-            $success[] = "✅ 500 customers created with dummy data";
-            $success[] = "✅ 700 policies created across 3 FY years";
+            $success[] = "✅ 25 sample customers created with realistic data";
+            $success[] = "✅ 25 sample policies created across different FY years";
             $success[] = "✅ 3 agent accounts created (phone: 9876543210, 9876543211, 9876543212)";
             $success[] = "✅ Default password for agents: Softpro@123";
             $success[] = "✅ 20+ insurance companies added";
             $success[] = "✅ Document upload system ready";
+            $success[] = "✅ Agent performance data added";
+            $success[] = "✅ Renewal tracking system active";
         }
         
     } catch (Exception $e) {
@@ -240,6 +228,53 @@ if ($agent_result) {
                     </div>
                 </div>
                 
+                <!-- Agent Accounts Section -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5>Agent Accounts</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($agent_check)): ?>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                No agent accounts found. Run database initialization to create agent accounts.
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Phone (Login ID)</th>
+                                            <th>Status</th>
+                                            <th>Default Password</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($agent_check as $agent): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($agent['name']) ?></td>
+                                            <td><code><?= htmlspecialchars($agent['phone']) ?></code></td>
+                                            <td>
+                                                <span class="badge bg-<?= $agent['status'] === 'active' ? 'success' : 'danger' ?>">
+                                                    <?= ucfirst($agent['status']) ?>
+                                                </span>
+                                            </td>
+                                            <td><code>Softpro@123</code></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3">
+                                <a href="/agent-login" class="btn btn-success btn-sm" target="_blank">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Test Agent Login
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
                 <?php if (!empty($success)): ?>
                 <div class="alert alert-success mt-3">
                     <h6>Success Messages:</h6>
@@ -267,12 +302,34 @@ if ($agent_result) {
                     <div class="card-body">
                         <form method="post">
                             <input type="hidden" name="action" value="init_db">
-                            <button type="submit" class="btn btn-primary">Initialize Database</button>
+                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                <i class="fas fa-database me-2"></i>Initialize Database
+                            </button>
                         </form>
                         
-                        <hr>
+                        <div class="d-grid gap-2">
+                            <a href="/" class="btn btn-success">
+                                <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                            </a>
+                            <a href="/agent-login" class="btn btn-info" target="_blank">
+                                <i class="fas fa-user-tie me-2"></i>Agent Portal
+                            </a>
+                        </div>
                         
-                        <a href="/" class="btn btn-success">Go to Dashboard</a>
+                        <div class="mt-4">
+                            <h6>Quick Links:</h6>
+                            <div class="list-group list-group-flush">
+                                <a href="/customers" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-users me-2"></i>Customers
+                                </a>
+                                <a href="/policies" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-file-contract me-2"></i>Policies
+                                </a>
+                                <a href="/policies/create" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-plus me-2"></i>Add Policy
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
