@@ -4,18 +4,79 @@ ini_set('display_errors', 1);
 
 echo "<h1>🔍 Database Diagnosis Report</h1>";
 
-// Database connection check
-require_once 'include/config.php';
+// Database connection details
+echo "<h2>📋 Database Configuration:</h2>";
+echo "Host: localhost<br>";
+echo "Database: u820431346_v2insurance<br>";
+echo "Username: u820431346_v2insurance<br>";
+echo "Password: [HIDDEN]<br><br>";
 
-if (!$conn) {
-    die("❌ Database connection failed: " . mysqli_connect_error());
+// Try direct mysqli connection first
+echo "<h2>🔗 Direct Database Connection Test:</h2>";
+
+$hostname = 'localhost';
+$database = 'u820431346_v2insurance';
+$username = 'u820431346_v2insurance';
+$password = 'Softpro@123';
+
+echo "Attempting direct mysqli connection...<br>";
+
+$conn = new mysqli($hostname, $username, $password, $database);
+
+if ($conn->connect_error) {
+    echo "❌ <strong>Direct mysqli connection failed:</strong> " . $conn->connect_error . "<br>";
+    
+    // Try alternative connection methods
+    echo "<br><h3>🔄 Trying Alternative Connection Methods:</h3>";
+    
+    // Try with 127.0.0.1
+    echo "Trying with 127.0.0.1 instead of localhost...<br>";
+    $conn2 = new mysqli('127.0.0.1', $username, $password, $database);
+    if ($conn2->connect_error) {
+        echo "❌ 127.0.0.1 connection failed: " . $conn2->connect_error . "<br>";
+    } else {
+        echo "✅ 127.0.0.1 connection successful!<br>";
+        $conn = $conn2;
+    }
+    
+    // Try with port 3306
+    if ($conn->connect_error) {
+        echo "Trying with explicit port 3306...<br>";
+        $conn3 = new mysqli($hostname, $username, $password, $database, 3306);
+        if ($conn3->connect_error) {
+            echo "❌ Port 3306 connection failed: " . $conn3->connect_error . "<br>";
+        } else {
+            echo "✅ Port 3306 connection successful!<br>";
+            $conn = $conn3;
+        }
+    }
+    
+    if ($conn->connect_error) {
+        echo "<br><div style='background: #ffebee; border: 1px solid #f44336; padding: 15px; border-radius: 5px;'>";
+        echo "<strong>🚨 HOSTINGER DEPLOYMENT ISSUE DETECTED</strong><br><br>";
+        echo "This error suggests the database connection details may be different on Hostinger.<br>";
+        echo "<strong>Solutions to try on Hostinger:</strong><br>";
+        echo "1. Check cPanel → MySQL Databases for correct database name<br>";
+        echo "2. Verify username and password in cPanel<br>";
+        echo "3. Ensure database user has full privileges<br>";
+        echo "4. Check if MySQL service is running<br>";
+        echo "5. Try connecting through cPanel phpMyAdmin first<br>";
+        echo "</div>";
+        exit;
+    }
+} else {
+    echo "✅ <strong>Database connection successful!</strong><br>";
 }
 
-echo "✅ Database connection successful<br>";
+// Set charset
+$conn->set_charset("utf8mb4");
+echo "✅ Character set configured<br>";
+
+// Now include the regular diagnosis
+echo "<h2>📊 Table Status:</h2>";
 
 // Check if tables exist
 $tables = ['users', 'customers', 'policies', 'insurance_companies', 'policy_types'];
-echo "<h2>📋 Table Status:</h2>";
 
 foreach ($tables as $table) {
     $result = mysqli_query($conn, "SHOW TABLES LIKE '$table'");
@@ -97,4 +158,9 @@ echo "All tables in database:<br>";
 while ($table = mysqli_fetch_array($show_tables)) {
     echo "• " . $table[0] . "<br>";
 }
+
+echo "<h2>🔧 Database Connection Info:</h2>";
+echo "MySQL Version: " . mysqli_get_server_info($conn) . "<br>";
+echo "Client Version: " . mysqli_get_client_info() . "<br>";
+echo "Connection Status: " . ($conn->ping() ? "✅ Active" : "❌ Inactive") . "<br>";
 ?>

@@ -2,10 +2,47 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Test script to load massive data directly
-require_once 'include/config.php';
+echo "<h1>🚀 Massive Data Loading System</h1>";
 
-echo "<h2>🔄 Loading Massive Data (500 customers + 700 policies)...</h2>";
+// Direct database connection (bypassing config.php to avoid issues)
+echo "<h2>🔗 Establishing Database Connection...</h2>";
+
+$hostname = 'localhost';
+$database = 'u820431346_v2insurance';
+$username = 'u820431346_v2insurance';
+$password = 'Softpro@123';
+
+$conn = new mysqli($hostname, $username, $password, $database);
+
+if ($conn->connect_error) {
+    // Try alternative connection methods
+    $conn = new mysqli('127.0.0.1', $username, $password, $database);
+    if ($conn->connect_error) {
+        die("❌ Database connection failed: " . $conn->connect_error);
+    }
+}
+
+echo "✅ Database connection established<br>";
+$conn->set_charset("utf8mb4");
+
+// Check if data already exists
+$customer_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM customers"))['count'];
+$policy_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM policies"))['count'];
+
+echo "<h2>� Current Data Status:</h2>";
+echo "Customers: $customer_count<br>";
+echo "Policies: $policy_count<br><br>";
+
+if ($customer_count >= 400 && $policy_count >= 600) {
+    echo "<div style='background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px;'>";
+    echo "✅ <strong>Massive data already loaded!</strong><br>";
+    echo "Customers: $customer_count | Policies: $policy_count<br>";
+    echo "<a href='/diagnosis.php' style='background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>View Diagnosis</a>";
+    echo "</div>";
+    exit;
+}
+
+echo "<h2>📥 Loading Massive Dataset...</h2>";
 
 // Load the massive seed data
 $seed_file = __DIR__ . '/database/complete_massive_seed_data.sql';

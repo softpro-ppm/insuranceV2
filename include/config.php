@@ -70,3 +70,18 @@ function getDbConnection() {
 
 // Include common functions
 require_once __DIR__ . '/functions.php';
+
+// Create mysqli connection for legacy compatibility
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+
+// Check mysqli connection
+if ($conn->connect_error) {
+    if (APP_DEBUG) {
+        die("Database connection failed: " . $conn->connect_error);
+    } else {
+        die("Database connection failed. Please try again later.");
+    }
+}
+
+// Set charset for mysqli connection
+$conn->set_charset("utf8mb4");
