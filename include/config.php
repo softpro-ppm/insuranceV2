@@ -14,7 +14,7 @@ date_default_timezone_set($app_config['timezone']);
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'u820431346_v2insurance');
 define('DB_USER', 'u820431346_v2insurance');
-define('DB_PASS', 'Rajesh@123');
+define('DB_PASS', 'Softpro@123');
 
 // Application settings
 define('APP_NAME', $app_config['name']);

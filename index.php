@@ -6,6 +6,19 @@
 
 session_start();
 
+// Load environment variables
+if (file_exists(__DIR__ . '/.env')) {
+    $env = file_get_contents(__DIR__ . '/.env');
+    $lines = explode("\n", $env);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (!empty($line) && strpos($line, '#') !== 0 && strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $_ENV[trim($key)] = trim($value);
+        }
+    }
+}
+
 // Error reporting for development
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
