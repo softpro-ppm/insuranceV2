@@ -114,7 +114,6 @@ CREATE TABLE IF NOT EXISTS policies (
     agent_id INT,
     commission_percentage DECIMAL(5,2),
     commission_amount DECIMAL(10,2),
-    status ENUM('active', 'expired', 'cancelled', 'claimed') DEFAULT 'active',
     remarks TEXT,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -203,6 +202,26 @@ CREATE TABLE IF NOT EXISTS settings (
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Agent Performance table for tracking agent metrics
+CREATE TABLE IF NOT EXISTS agent_performance (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    agent_id INT NOT NULL,
+    month CHAR(7) NOT NULL, -- Format: YYYY-MM
+    policies_sold INT DEFAULT 0,
+    total_premium DECIMAL(15,2) DEFAULT 0.00,
+    total_commission DECIMAL(15,2) DEFAULT 0.00,
+    motor_policies INT DEFAULT 0,
+    health_policies INT DEFAULT 0,
+    life_policies INT DEFAULT 0,
+    target_premium DECIMAL(15,2) DEFAULT 0.00,
+    achievement_percentage DECIMAL(5,2) DEFAULT 0.00,
+    rank_position INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (agent_id) REFERENCES users(id),
+    UNIQUE KEY unique_agent_month (agent_id, month)
 );
 
 -- Insert default admin user (password: password)
