@@ -599,7 +599,19 @@
                 <?php unset($_SESSION['error']); ?>
             <?php endif; ?>
 
-            <!-- Page Content Goes Here -->
+            <!-- Page Content -->
+            <?php if (isset($content)): ?>
+                <?= $content ?>
+            <?php else: ?>
+                <!-- Dynamic content will be included here -->
+                <?php 
+                // Check if we're in a view that should include content
+                $current_file = basename($_SERVER['SCRIPT_NAME'], '.php');
+                if (file_exists(__DIR__ . "/../{$current_file}.php")) {
+                    include __DIR__ . "/../{$current_file}.php";
+                }
+                ?>
+            <?php endif; ?>
         </main>
     </div>
 

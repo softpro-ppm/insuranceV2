@@ -1,72 +1,16 @@
 <?php
+// This file is for direct access - redirect to router
 session_start();
-require_once 'include/config.php';
-require_once 'include/session.php';
 
-// Fetch policies with customer information
-try {
-    $pdo = new PDO("mysql:host=localhost;dbname=u820431346_v2insurance", 'u820431346_v2insurance', 'Rajesh@123');
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Build query with search and filter
-    $search = $_GET['search'] ?? '';
-    $status_filter = $_GET['status'] ?? '';
-    $type_filter = $_GET['type'] ?? '';
-    
-    $where_conditions = [];
-    $params = [];
-    
-    if (!empty($search)) {
-        $where_conditions[] = "(p.policy_number LIKE ? OR c.name LIKE ? OR c.email LIKE ?)";
-        $params[] = "%$search%";
-        $params[] = "%$search%";
-        $params[] = "%$search%";
-    }
-    
-    if (!empty($status_filter)) {
-        $where_conditions[] = "p.status = ?";
-        $params[] = $status_filter;
-    }
-    
-    if (!empty($type_filter)) {
-        $where_conditions[] = "p.policy_type = ?";
-        $params[] = $type_filter;
-    }
-    
-    $where_clause = !empty($where_conditions) ? "WHERE " . implode(" AND ", $where_conditions) : "";
-    
-    $sql = "SELECT p.*, c.name as customer_name, c.email as customer_email, c.phone as customer_phone 
-            FROM policies p 
-            LEFT JOIN customers c ON p.customer_id = c.id 
-            $where_clause 
-            ORDER BY p.created_at DESC";
-    
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $policies = $stmt->fetchAll();
-    
-    // Get summary statistics
-    $stmt = $pdo->query("SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-        SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
-        FROM policies");
-    $summary = $stmt->fetch();
-    
-} catch(PDOException $e) {
-    $policies = [];
-    $summary = ['total' => 0, 'active' => 0, 'pending' => 0, 'expired' => 0];
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: /login');
+    exit();
 }
 
-$current_page = 'policies';
-$title = 'Policies - Insurance Management System v2.0';
-$breadcrumbs = [
-    'dashboard' => ['title' => 'Dashboard', 'url' => '/dashboard'],
-    'policies' => ['title' => 'Policies', 'url' => '/policies']
-];
-
-include 'resources/views/layouts/app.php';
+// Redirect to policies route which handles the proper display
+header('Location: /policies');
+exit();
 ?>
 
 <!-- Page Header -->

@@ -1,54 +1,16 @@
 <?php
+// This file is for direct access - redirect to router
 session_start();
-require_once 'include/config.php';
-require_once 'include/session.php';
 
-// Fetch dashboard statistics
-try {
-    $pdo = new PDO("mysql:host=localhost;dbname=u820431346_v2insurance", 'u820431346_v2insurance', 'Rajesh@123');
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Get total policies
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM policies");
-    $total_policies = $stmt->fetch()['total'] ?? 0;
-    
-    // Get active policies
-    $stmt = $pdo->query("SELECT COUNT(*) as active FROM policies WHERE status = 'active'");
-    $active_policies = $stmt->fetch()['active'] ?? 0;
-    
-    // Get pending renewals (policies expiring in next 30 days)
-    $stmt = $pdo->query("SELECT COUNT(*) as pending FROM policies WHERE status = 'active' AND expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)");
-    $pending_renewals = $stmt->fetch()['pending'] ?? 0;
-    
-    // Get expired policies
-    $stmt = $pdo->query("SELECT COUNT(*) as expired FROM policies WHERE status = 'expired' OR expiry_date < CURDATE()");
-    $expired_policies = $stmt->fetch()['expired'] ?? 0;
-    
-    // Get total customers
-    $stmt = $pdo->query("SELECT COUNT(*) as customers FROM customers");
-    $total_customers = $stmt->fetch()['customers'] ?? 0;
-    
-    // Get recent policies
-    $stmt = $pdo->prepare("SELECT p.*, c.name as customer_name FROM policies p LEFT JOIN customers c ON p.customer_id = c.id ORDER BY p.created_at DESC LIMIT 5");
-    $stmt->execute();
-    $recent_policies = $stmt->fetchAll();
-    
-} catch(PDOException $e) {
-    $total_policies = 0;
-    $active_policies = 0;
-    $pending_renewals = 0;
-    $expired_policies = 0;
-    $total_customers = 0;
-    $recent_policies = [];
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: /login');
+    exit();
 }
 
-$current_page = 'dashboard';
-$title = 'Dashboard - Insurance Management System v2.0';
-$breadcrumbs = [
-    'dashboard' => ['title' => 'Dashboard', 'url' => '/dashboard']
-];
-
-include 'resources/views/layouts/app.php';
+// Redirect to dashboard route which handles the proper display
+header('Location: /dashboard');
+exit();
 ?>
 
 <!-- Page Header -->
