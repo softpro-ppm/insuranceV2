@@ -144,7 +144,8 @@ $customer_count = $customer_count_result ? mysqli_fetch_assoc($customer_count_re
 
 if ($customer_count < 100) {
     echo "⚠️ <strong>Only $customer_count customers found. Expected 500!</strong><br>";
-    echo "📋 <a href='/test_data_load.php' style='background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Load Massive Data</a><br><br>";
+    echo "📋 <a href='/test_data_load.php' style='background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;'>Load Massive Data</a>";
+    echo "🚀 <a href='/super_data_loader.php' style='background: #ff6b35; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Super Data Loader</a><br><br>";
 }
 
 echo "🔗 <a href='/setup.php' style='background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Setup Page</a> ";

@@ -268,6 +268,9 @@ if ($agent_result) {
                             <a href="/agent-login" class="btn btn-info" target="_blank">
                                 <i class="fas fa-user-tie me-2"></i>Agent Portal
                             </a>
+                            <a href="/super_data_loader.php" class="btn btn-warning" target="_blank">
+                                <i class="fas fa-rocket me-2"></i>Super Data Loader
+                            </a>
                         </div>
                         
                         <div class="mt-4">
