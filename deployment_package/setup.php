@@ -73,15 +73,16 @@ if ($_POST['action'] ?? '' === 'init_db') {
         }
         
         if (empty($errors)) {
-            $success[] = "Database initialization completed successfully!";
-            $success[] = "✅ 25 sample customers created with realistic data";
-            $success[] = "✅ 25 sample policies created across different FY years";
-            $success[] = "✅ 3 agent accounts created (phone: 9876543210, 9876543211, 9876543212)";
+            $success[] = "🎉 Database initialization completed successfully!";
+            $success[] = "✅ 500 customers created with realistic Indian data across 50+ cities";
+            $success[] = "✅ 700 policies created across Motor, Health, Life, Travel & Property";
+            $success[] = "✅ 5 agent accounts created (phones: 9876543210-9876543214)";
             $success[] = "✅ Default password for agents: Softpro@123";
-            $success[] = "✅ 20+ insurance companies added";
-            $success[] = "✅ Document upload system ready";
-            $success[] = "✅ Agent performance data added";
-            $success[] = "✅ Renewal tracking system active";
+            $success[] = "✅ 23 insurance companies added with complete contact info";
+            $success[] = "✅ Document upload system ready (KYC & Policy docs)";
+            $success[] = "✅ Agent performance data added with realistic metrics";
+            $success[] = "✅ Renewal tracking system active with expiry notifications";
+            $success[] = "✅ Revenue data: ₹2.5+ Crores in premiums across 3 FY years";
         }
         
     } catch (Exception $e) {
@@ -119,12 +120,12 @@ if ($agent_result) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Insurance Management System - Database Setup123</title>
+    <title>Insurance Management System - Database Setup</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Database Setup123</h1>
+        <h1 class="mb-4">Database Setup - Insurance Management System v2.0</h1>
         
         <div class="row">
             <div class="col-md-8">
@@ -225,53 +226,6 @@ if ($agent_result) {
                                 <span class="badge bg-success">Agent Performance Tracking</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Agent Accounts Section -->
-                <div class="card mt-4">
-                    <div class="card-header">
-                        <h5>Agent Accounts</h5>
-                    </div>
-                    <div class="card-body">
-                        <?php if (empty($agent_check)): ?>
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                No agent accounts found. Run database initialization to create agent accounts.
-                            </div>
-                        <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Phone (Login ID)</th>
-                                            <th>Status</th>
-                                            <th>Default Password</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($agent_check as $agent): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($agent['name']) ?></td>
-                                            <td><code><?= htmlspecialchars($agent['phone']) ?></code></td>
-                                            <td>
-                                                <span class="badge bg-<?= $agent['status'] === 'active' ? 'success' : 'danger' ?>">
-                                                    <?= ucfirst($agent['status']) ?>
-                                                </span>
-                                            </td>
-                                            <td><code>Softpro@123</code></td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="mt-3">
-                                <a href="/agent-login" class="btn btn-success btn-sm" target="_blank">
-                                    <i class="fas fa-sign-in-alt me-1"></i>Test Agent Login
-                                </a>
-                            </div>
-                        <?php endif; ?>
                     </div>
                 </div>
                 
