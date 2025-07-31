@@ -361,9 +361,50 @@ $router->post('/policies/store', function() {
     try {
         $db = Database::getInstance();
         
+        // Handle customer creation or selection
+        $customer_id = $_POST['customer_id'] ?? '';
+        $customer_option = $_POST['customer_option'] ?? 'new';
+        
+        if ($customer_option === 'new' || empty($customer_id)) {
+            // Create new customer
+            $customer_name = $_POST['customer_name'] ?? '';
+            $customer_phone = $_POST['customer_phone'] ?? '';
+            $customer_email = $_POST['customer_email'] ?? '';
+            $customer_dob = $_POST['customer_dob'] ?? '';
+            $customer_address = $_POST['customer_address'] ?? '';
+            
+            if (empty($customer_name) || empty($customer_phone)) {
+                $_SESSION['error'] = 'Customer name and phone are required';
+                header('Location: /policies/create');
+                exit;
+            }
+            
+            // Generate customer code
+            $customer_code = 'CUST' . date('Y') . sprintf('%04d', rand(1, 9999));
+            
+            // Insert new customer
+            $customer_data = [
+                'customer_code' => $customer_code,
+                'name' => $customer_name,
+                'phone' => $customer_phone,
+                'email' => $customer_email,
+                'date_of_birth' => $customer_dob ?: null,
+                'address' => $customer_address,
+                'created_by' => $_SESSION['user_id']
+            ];
+            
+            $customer_columns = implode(', ', array_keys($customer_data));
+            $customer_placeholders = ':' . implode(', :', array_keys($customer_data));
+            $customer_sql = "INSERT INTO customers ($customer_columns) VALUES ($customer_placeholders)";
+            
+            $stmt = $db->getConnection()->prepare($customer_sql);
+            $stmt->execute($customer_data);
+            
+            $customer_id = $db->getConnection()->lastInsertId();
+        }
+        
         // Get form data
         $category = $_POST['category'] ?? '';
-        $customer_id = $_POST['customer_id'] ?? '';
         $insurance_company_id = $_POST['insurance_company_id'] ?? '';
         $policy_type_id = $_POST['policy_type_id'] ?? '';
         $policy_start_date = $_POST['policy_start_date'] ?? '';
@@ -737,9 +778,14 @@ $router->get('/api/customers', function() {
     requireAuth();
     header('Content-Type: application/json');
     
-    $db = Database::getInstance();
-    $customers = $db->fetchAll("SELECT id, customer_code, name, phone FROM customers ORDER BY name");
-    echo json_encode($customers);
+    try {
+        $db = Database::getInstance();
+        $customers = $db->fetchAll("SELECT id, customer_code, name, phone FROM customers ORDER BY name");
+        echo json_encode($customers);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    }
     exit;
 });
 

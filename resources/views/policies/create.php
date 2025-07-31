@@ -91,26 +91,58 @@
                             Step 2: Customer Information
                         </h5>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="customer_name" required>
+                        <!-- Customer Selection Toggle -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="customer_option" id="existing_customer" value="existing">
+                                    <label class="btn btn-outline-primary" for="existing_customer">
+                                        <i class="fas fa-search me-2"></i>Select Existing Customer
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="customer_option" id="new_customer" value="new" checked>
+                                    <label class="btn btn-outline-primary" for="new_customer">
+                                        <i class="fas fa-user-plus me-2"></i>Add New Customer
+                                    </label>
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control" name="customer_phone" required maxlength="10">
+                        </div>
+                        
+                        <!-- Existing Customer Selection -->
+                        <div id="existing_customer_section" class="d-none">
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label class="form-label">Select Customer <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="customer_id" name="customer_id">
+                                        <option value="">Loading customers...</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email Address</label>
-                                <input type="email" class="form-control" name="customer_email">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Date of Birth</label>
-                                <input type="date" class="form-control" name="customer_dob">
-                            </div>
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label">Address</label>
-                                <textarea class="form-control" name="customer_address" rows="2"></textarea>
+                        </div>
+                        
+                        <!-- New Customer Form -->
+                        <div id="new_customer_section">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="customer_name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" name="customer_phone" required maxlength="10">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" name="customer_email">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Date of Birth</label>
+                                    <input type="date" class="form-control" name="customer_dob">
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Address</label>
+                                    <textarea class="form-control" name="customer_address" rows="2"></textarea>
+                                </div>
                             </div>
                         </div>
                         
@@ -393,9 +425,35 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         } catch (error) {
             console.error('Error loading customers:', error);
+            const select = document.getElementById('customer_id');
+            select.innerHTML = '<option value="">Error loading customers</option>';
             alert('Error loading customers. Please refresh the page.');
         }
     }
+    
+    // Customer option toggle functionality
+    document.querySelectorAll('input[name="customer_option"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const existingSection = document.getElementById('existing_customer_section');
+            const newSection = document.getElementById('new_customer_section');
+            
+            if (this.value === 'existing') {
+                existingSection.classList.remove('d-none');
+                newSection.classList.add('d-none');
+                // Make customer_id required and customer_name not required
+                document.getElementById('customer_id').required = true;
+                document.querySelector('input[name="customer_name"]').required = false;
+                document.querySelector('input[name="customer_phone"]').required = false;
+            } else {
+                existingSection.classList.add('d-none');
+                newSection.classList.remove('d-none');
+                // Make customer fields required and customer_id not required
+                document.getElementById('customer_id').required = false;
+                document.querySelector('input[name="customer_name"]').required = true;
+                document.querySelector('input[name="customer_phone"]').required = true;
+            }
+        });
+    });
 
     // Fetch policy types based on category
     async function loadPolicyTypes(category) {
