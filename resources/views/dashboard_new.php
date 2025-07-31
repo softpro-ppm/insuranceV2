@@ -299,17 +299,11 @@ function refreshChart() {
     const chartContainer = document.querySelector('#businessChart').parentElement;
     chartContainer.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading chart data...</div>';
     
-    // Fetch new data based on period
-    fetch(`/api/chart-data?period=${period}`)
-        .then(response => response.json())
-        .then(data => {
-            chartContainer.innerHTML = '<canvas id="businessChart" height="100"></canvas>';
-            initChart(data);
-        })
-        .catch(error => {
-            console.error('Error fetching chart data:', error);
-            chartContainer.innerHTML = '<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle"></i> Error loading chart data</div>';
-        });
+    // For now, use existing data (in future, implement API endpoint)
+    setTimeout(() => {
+        chartContainer.innerHTML = '<canvas id="businessChart" height="100"></canvas>';
+        initChart(chartData);
+    }, 500);
 }
 
 // Policy action functions

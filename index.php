@@ -153,23 +153,90 @@ $router->get('/dashboard', function() {
     
     $db = Database::getInstance();
     
-    // Get statistics
+    // Current date and financial year calculations
+    $current_date = date('Y-m-d');
+    $current_month_start = date('Y-m-01');
+    $current_month_end = date('Y-m-t');
+    
+    // Financial Year (April to March)
+    $current_year = date('Y');
+    $current_month = date('m');
+    if ($current_month >= 4) {
+        $fy_start = $current_year . '-04-01';
+        $fy_end = ($current_year + 1) . '-03-31';
+        $fy_label = 'FY ' . $current_year . '-' . ($current_year + 1);
+    } else {
+        $fy_start = ($current_year - 1) . '-04-01';
+        $fy_end = $current_year . '-03-31';
+        $fy_label = 'FY ' . ($current_year - 1) . '-' . $current_year;
+    }
+    
+    // A. Dashboard Cards Statistics
+    $stats = [];
+    
+    // 1. Total Premium FY & Current Month
+    $premium_fy = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$fy_start, $fy_end])['total'] ?? 0;
+    $premium_current_month = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$current_month_start, $current_month_end])['total'] ?? 0;
+    
+    // 2. Revenue FY & Current Month (using commission_amount)
+    $revenue_fy = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$fy_start, $fy_end])['total'] ?? 0;
+    $revenue_current_month = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$current_month_start, $current_month_end])['total'] ?? 0;
+    
+    // 3. Total Policies Current Month & Renewed Current Month
+    $policies_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$current_month_start, $current_month_end])['count'] ?? 0;
+    $renewed_current_month = $db->fetch("SELECT COUNT(*) as count FROM policy_renewals WHERE renewal_date BETWEEN ? AND ?", [$current_month_start, $current_month_end])['count'] ?? 0;
+    
+    // 4. Pending Renewal, Expired & Expiring Soon
+    $pending_renewal = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND ? AND status = 'active'", [$current_month_start, $current_month_end])['count'] ?? 0;
+    $expired_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date < ? AND status = 'active'", [$current_date])['count'] ?? 0;
+    $expiring_soon = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY) AND status = 'active'", [$current_date, $current_date])['count'] ?? 0;
+    
     $stats = [
-        'total_policies' => $db->fetch("SELECT COUNT(*) as count FROM policies WHERE status = 'active'")['count'] ?? 0,
-        'total_customers' => $db->fetch("SELECT COUNT(*) as count FROM customers")['count'] ?? 0,
-        'expiring_soon' => $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND status = 'active'")['count'] ?? 0,
-        'total_premium' => $db->fetch("SELECT SUM(premium_amount) as total FROM policies WHERE status = 'active'")['total'] ?? 0,
+        'premium_fy' => $premium_fy,
+        'premium_current_month' => $premium_current_month,
+        'revenue_fy' => $revenue_fy,
+        'revenue_current_month' => $revenue_current_month,
+        'policies_current_month' => $policies_current_month,
+        'renewed_current_month' => $renewed_current_month,
+        'pending_renewal' => $pending_renewal,
+        'expired_policies' => $expired_policies,
+        'expiring_soon' => $expiring_soon,
+        'fy_label' => $fy_label
     ];
     
-    // Recent policies
-    $recent_policies = $db->fetchAll("
-        SELECT p.*, c.name as customer_name, ic.name as company_name 
+    // B. Chart Data - Last 12 Months
+    $chart_data = [];
+    for ($i = 11; $i >= 0; $i--) {
+        $month_start = date('Y-m-01', strtotime("-$i months"));
+        $month_end = date('Y-m-t', strtotime("-$i months"));
+        $month_label = date('M Y', strtotime("-$i months"));
+        
+        $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
+        $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+        $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+        
+        $chart_data[] = [
+            'month' => $month_label,
+            'policies' => $month_policies,
+            'premium' => $month_premium,
+            'revenue' => $month_revenue
+        ];
+    }
+    
+    // C. Pending Renewal Policies for Current Month
+    $pending_renewal_policies = $db->fetchAll("
+        SELECT p.*, c.name as customer_name, c.phone as customer_phone, 
+               ic.name as company_name, pt.name as policy_type_name,
+               DATEDIFF(p.policy_end_date, CURDATE()) as days_to_expire
         FROM policies p 
         LEFT JOIN customers c ON p.customer_id = c.id 
         LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
-        ORDER BY p.created_at DESC 
-        LIMIT 10
-    ");
+        LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
+        WHERE p.policy_end_date BETWEEN ? AND ? 
+        AND p.status = 'active'
+        ORDER BY p.policy_end_date ASC
+        LIMIT 20
+    ", [$current_month_start, $current_month_end]);
     
     view('dashboard', [
         'title' => 'Dashboard - Insurance Management System',
@@ -178,7 +245,8 @@ $router->get('/dashboard', function() {
             ['title' => 'Dashboard', 'url' => '/dashboard']
         ],
         'stats' => $stats,
-        'recent_policies' => $recent_policies
+        'chart_data' => $chart_data,
+        'pending_renewal_policies' => $pending_renewal_policies
     ]);
 });
 
@@ -205,6 +273,66 @@ $router->get('/policies', function() {
         ],
         'policies' => $policies
     ]);
+});
+
+// API endpoint for chart data
+$router->get('/api/chart-data', function() {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $period = $_GET['period'] ?? '12months';
+    
+    $chart_data = [];
+    
+    if ($period === '12months') {
+        // Last 12 months data
+        for ($i = 11; $i >= 0; $i--) {
+            $month_start = date('Y-m-01', strtotime("-$i months"));
+            $month_end = date('Y-m-t', strtotime("-$i months"));
+            $month_label = date('M Y', strtotime("-$i months"));
+            
+            $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
+            $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            
+            $chart_data[] = [
+                'month' => $month_label,
+                'policies' => $month_policies,
+                'premium' => $month_premium,
+                'revenue' => $month_revenue
+            ];
+        }
+    } else {
+        // Financial Year data
+        $fy_year = explode('-', str_replace('fy', '', $period));
+        $fy_start = $fy_year[0] . '-04-01';
+        $fy_end = $fy_year[1] . '-03-31';
+        
+        // Generate 12 months of FY data
+        for ($i = 0; $i < 12; $i++) {
+            $month_start = date('Y-m-01', strtotime($fy_start . " +$i months"));
+            $month_end = date('Y-m-t', strtotime($fy_start . " +$i months"));
+            $month_label = date('M Y', strtotime($fy_start . " +$i months"));
+            
+            // Stop if we've reached the end of FY
+            if ($month_start > $fy_end) break;
+            
+            $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
+            $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            
+            $chart_data[] = [
+                'month' => $month_label,
+                'policies' => $month_policies,
+                'premium' => $month_premium,
+                'revenue' => $month_revenue
+            ];
+        }
+    }
+    
+    header('Content-Type: application/json');
+    echo json_encode($chart_data);
+    exit;
 });
 
 $router->get('/policies/create', function() {
