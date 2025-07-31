@@ -68,6 +68,86 @@ echo "✅ Found " . count($seed_queries) . " SQL statements<br><br>";
 $success_count = 0;
 $error_count = 0;
 
+echo "<h3>⚡ Executing SQL statements:</h3>";
+echo "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; max-height: 300px; overflow-y: auto;'>";
+
+foreach ($seed_queries as $i => $query) {
+    if (!empty($query) && substr($query, 0, 2) !== '--' && substr($query, 0, 2) !== '/*') {
+        if (mysqli_query($conn, $query)) {
+            $success_count++;
+            if (stripos($query, 'INSERT INTO customers') === 0) {
+                echo "✅ Customer batch " . (floor($success_count/20) + 1) . " inserted<br>";
+            } elseif (stripos($query, 'INSERT INTO policies') === 0) {
+                echo "✅ Policy batch " . (floor($success_count/30) + 1) . " inserted<br>";
+            } elseif ($success_count % 20 == 0) {
+                echo "✅ Progress: $success_count statements completed<br>";
+            }
+        } else {
+            $error_msg = mysqli_error($conn);
+            // Ignore duplicate entry errors
+            if (strpos($error_msg, 'Duplicate entry') !== false) {
+                echo "⚠️ Duplicate entry (ignored)<br>";
+            } else {
+                echo "❌ Error: " . $error_msg . "<br>";
+                $error_count++;
+            }
+        }
+    }
+}
+
+echo "</div>";
+
+echo "<h2>📈 Import Results:</h2>";
+echo "✅ Successful operations: $success_count<br>";
+echo "❌ Failed operations: $error_count<br>";
+
+// Verify final counts
+$new_customer_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM customers"))['count'];
+$new_policy_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM policies"))['count'];
+
+echo "<h2>🎯 Final Data Count:</h2>";
+echo "Customers: $new_customer_count (+" . ($new_customer_count - $customer_count) . ")<br>";
+echo "Policies: $new_policy_count (+" . ($new_policy_count - $policy_count) . ")<br>";
+
+if ($new_customer_count >= 400 && $new_policy_count >= 600) {
+    echo "<div style='background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin-top: 20px;'>";
+    echo "🎉 <strong>MASSIVE DATA LOADING SUCCESSFUL!</strong><br>";
+    echo "Your insurance system now has realistic production-level data.<br><br>";
+    echo "<a href='/diagnosis.php' style='background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;'>View Full Diagnosis</a>";
+    echo "<a href='/dashboard' style='background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Go to Dashboard</a>";
+    echo "</div>";
+} else {
+    echo "<div style='background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-top: 20px;'>";
+    echo "⚠️ <strong>Partial data loading completed</strong><br>";
+    echo "Some data may not have loaded completely. Check the errors above.<br>";
+    echo "<a href='/diagnosis.php' style='background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Run Diagnosis</a>";
+    echo "</div>";
+}
+
+// Sample data preview
+echo "<h2>👥 Sample Loaded Data:</h2>";
+
+$sample_customers = mysqli_query($conn, "SELECT name, email, city FROM customers ORDER BY id DESC LIMIT 5");
+if ($sample_customers && mysqli_num_rows($sample_customers) > 0) {
+    echo "<strong>Recent Customers:</strong><br>";
+    while ($row = mysqli_fetch_assoc($sample_customers)) {
+        echo "• " . htmlspecialchars($row['name']) . " (" . htmlspecialchars($row['email']) . ") - " . htmlspecialchars($row['city']) . "<br>";
+    }
+}
+
+$sample_policies = mysqli_query($conn, "SELECT policy_number, premium_amount, category FROM policies ORDER BY id DESC LIMIT 5");
+if ($sample_policies && mysqli_num_rows($sample_policies) > 0) {
+    echo "<br><strong>Recent Policies:</strong><br>";
+    while ($row = mysqli_fetch_assoc($sample_policies)) {
+        echo "• " . htmlspecialchars($row['policy_number']) . " - ₹" . number_format($row['premium_amount']) . " (" . htmlspecialchars($row['category']) . ")<br>";
+    }
+}
+
+mysqli_close($conn);
+
+$success_count = 0;
+$error_count = 0;
+
 echo "<h3>Executing SQL statements:</h3>";
 
 foreach ($seed_queries as $i => $query) {
