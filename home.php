@@ -15,7 +15,7 @@ exit();
 
 <!-- Page Header -->
 <div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
+    <h1 class="page-title">Dashboard1</h1>
     <p class="page-subtitle">Welcome back! Here's what's happening with your insurance business today.</p>
 </div>
 
