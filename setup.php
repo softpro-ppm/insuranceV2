@@ -124,7 +124,7 @@ if ($agent_result) {
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Database Setup</h1>
+        <h1 class="mb-4">Database Setup123</h1>
         
         <div class="row">
             <div class="col-md-8">
