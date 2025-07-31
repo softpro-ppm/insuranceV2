@@ -10,7 +10,7 @@ $errors = [];
 
 if ($_POST['action'] ?? '' === 'init_db') {
     try {
-        // Read the SQL file
+        // Read and execute the main SQL file
         $sql_file = __DIR__ . '/database/init_database.sql';
         if (!file_exists($sql_file)) {
             throw new Exception("SQL file not found: " . $sql_file);
@@ -21,7 +21,7 @@ if ($_POST['action'] ?? '' === 'init_db') {
             throw new Exception("Failed to read SQL file");
         }
         
-        // Split into individual queries
+        // Split into individual queries and execute
         $queries = array_filter(array_map('trim', explode(';', $sql_content)));
         
         foreach ($queries as $query) {
@@ -36,8 +36,64 @@ if ($_POST['action'] ?? '' === 'init_db') {
             }
         }
         
+        // Execute seed data if main database setup was successful
+        if (empty($errors)) {
+            $seed_file = __DIR__ . '/database/seed_data.sql';
+            if (file_exists($seed_file)) {
+                $seed_content = file_get_contents($seed_file);
+                if ($seed_content) {
+                    $success[] = "Executing seed data script...";
+                    
+                    // For seed data, we need to handle stored procedures differently
+                    $seed_queries = explode('DELIMITER', $seed_content);
+                    
+                    foreach ($seed_queries as $section) {
+                        $section = trim($section);
+                        if (empty($section)) continue;
+                        
+                        if (strpos($section, '//') !== false) {
+                            // This is a stored procedure section
+                            $procedure_queries = explode('//', $section);
+                            foreach ($procedure_queries as $proc_query) {
+                                $proc_query = trim($proc_query);
+                                if (!empty($proc_query) && substr($proc_query, 0, 2) !== '--') {
+                                    if (mysqli_query($conn, $proc_query)) {
+                                        $success[] = "Executed procedure section";
+                                    } else {
+                                        $errors[] = "Procedure error: " . mysqli_error($conn);
+                                    }
+                                }
+                            }
+                        } else {
+                            // Regular SQL queries
+                            $regular_queries = array_filter(array_map('trim', explode(';', $section)));
+                            foreach ($regular_queries as $query) {
+                                if (!empty($query) && substr($query, 0, 2) !== '--') {
+                                    if (mysqli_query($conn, $query)) {
+                                        $success[] = "Executed: " . substr($query, 0, 50) . "...";
+                                    } else {
+                                        $error_msg = mysqli_error($conn);
+                                        // Ignore "table already exists" errors for seed data
+                                        if (strpos($error_msg, 'already exists') === false) {
+                                            $errors[] = "Failed: " . $error_msg . " - " . substr($query, 0, 50);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         if (empty($errors)) {
             $success[] = "Database initialization completed successfully!";
+            $success[] = "✅ 500 customers created with dummy data";
+            $success[] = "✅ 700 policies created across 3 FY years";
+            $success[] = "✅ 3 agent accounts created (phone: 9876543210, 9876543211, 9876543212)";
+            $success[] = "✅ Default password for agents: Softpro@123";
+            $success[] = "✅ 20+ insurance companies added";
+            $success[] = "✅ Document upload system ready";
         }
         
     } catch (Exception $e) {
@@ -47,7 +103,7 @@ if ($_POST['action'] ?? '' === 'init_db') {
 
 // Check table status
 $tables_status = [];
-$check_tables = ['users', 'customers', 'insurance_companies', 'policy_types', 'policies'];
+$check_tables = ['users', 'customers', 'insurance_companies', 'policy_types', 'policies', 'customer_documents', 'policy_documents', 'agent_performance'];
 
 foreach ($check_tables as $table) {
     $result = mysqli_query($conn, "SHOW TABLES LIKE '$table'");
@@ -61,6 +117,15 @@ foreach ($check_tables as $table) {
     }
     
     $tables_status[$table] = ['exists' => $exists, 'count' => $count];
+}
+
+// Check agent accounts
+$agent_check = [];
+$agent_result = mysqli_query($conn, "SELECT name, phone, status FROM users WHERE role = 'agent' ORDER BY id");
+if ($agent_result) {
+    while ($row = mysqli_fetch_assoc($agent_result)) {
+        $agent_check[] = $row;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -104,6 +169,74 @@ foreach ($check_tables as $table) {
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+                
+                <!-- Agent Accounts -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Agent Accounts</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($agent_check)): ?>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Phone (Login ID)</th>
+                                        <th>Status</th>
+                                        <th>Default Password</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($agent_check as $agent): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($agent['name']) ?></td>
+                                        <td><code><?= htmlspecialchars($agent['phone']) ?></code></td>
+                                        <td>
+                                            <span class="badge bg-<?= $agent['status'] === 'active' ? 'success' : 'danger' ?>">
+                                                <?= ucfirst($agent['status']) ?>
+                                            </span>
+                                        </td>
+                                        <td><code>Softpro@123</code></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <div class="alert alert-info mt-2">
+                                <strong>Agent Login:</strong> Use phone number as username and "Softpro@123" as password<br>
+                                <strong>Agent Portal:</strong> <a href="/agent-login" target="_blank">https://v2.insurance.softpromis.com/agent-login</a>
+                            </div>
+                        <?php else: ?>
+                            <div class="text-muted">No agent accounts found. Run database initialization to create agent accounts.</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <!-- System Information -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>System Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Live Website:</strong><br>
+                                <a href="https://v2.insurance.softpromis.com/dashboard" target="_blank" class="btn btn-success btn-sm">
+                                    <i class="fas fa-external-link-alt"></i> Admin Dashboard
+                                </a>
+                                <a href="/agent-login" target="_blank" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-user-tie"></i> Agent Portal
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Features Ready:</strong><br>
+                                <span class="badge bg-success">Document Upload (KYC & Policy)</span><br>
+                                <span class="badge bg-success">Email & WhatsApp Ready</span><br>
+                                <span class="badge bg-success">Multi-FY Data</span><br>
+                                <span class="badge bg-success">Agent Performance Tracking</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

@@ -789,6 +789,212 @@ $router->get('/api/customers', function() {
     exit;
 });
 
+$router->get('/agent-login', function() {
+    require_once __DIR__ . '/agent-login.php';
+});
+
+$router->get('/agent/dashboard', function() {
+    require_once __DIR__ . '/resources/views/agent/dashboard.php';
+});
+
+$router->get('/agent/logout', function() {
+    session_start();
+    session_destroy();
+    header('Location: /agent-login');
+    exit;
+});
+
+// File upload handler for customer documents
+$router->post('/api/upload-customer-documents', function() {
+    requireAuth();
+    header('Content-Type: application/json');
+    
+    try {
+        $customer_id = $_POST['customer_id'] ?? '';
+        $uploaded_files = [];
+        
+        if (empty($customer_id)) {
+            throw new Exception('Customer ID is required');
+        }
+        
+        // Create upload directory if it doesn't exist
+        $upload_dir = __DIR__ . '/uploads/customers/' . $customer_id;
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        // Document types mapping
+        $document_types = [
+            'aadhar_document' => 'aadhar',
+            'pan_document' => 'pan',
+            'passport_document' => 'passport',
+            'driving_license_document' => 'driving_license',
+            'other_document' => 'other'
+        ];
+        
+        foreach ($document_types as $field_name => $doc_type) {
+            if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES[$field_name];
+                
+                // Validate file
+                $allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+                if (!in_array($file['type'], $allowed_types)) {
+                    throw new Exception("Invalid file type for $doc_type");
+                }
+                
+                if ($file['size'] > 5 * 1024 * 1024) { // 5MB limit
+                    throw new Exception("File too large for $doc_type");
+                }
+                
+                // Generate unique filename
+                $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+                $filename = $doc_type . '_' . time() . '_' . uniqid() . '.' . $extension;
+                $filepath = $upload_dir . '/' . $filename;
+                
+                if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                    // Save to database
+                    $db = Database::getInstance();
+                    $db->execute(
+                        "INSERT INTO customer_documents (customer_id, document_type, document_number, file_name, file_path, file_size, mime_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        [$customer_id, $doc_type, '', $file['name'], $filepath, $file['size'], $file['type'], $_SESSION['user_id']]
+                    );
+                    
+                    $uploaded_files[] = [
+                        'type' => $doc_type,
+                        'filename' => $filename,
+                        'original_name' => $file['name']
+                    ];
+                }
+            }
+        }
+        
+        echo json_encode(['success' => true, 'uploaded_files' => $uploaded_files]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+});
+
+// File upload handler for policy documents
+$router->post('/api/upload-policy-documents', function() {
+    requireAuth();
+    header('Content-Type: application/json');
+    
+    try {
+        $policy_id = $_POST['policy_id'] ?? '';
+        $uploaded_files = [];
+        
+        if (empty($policy_id)) {
+            throw new Exception('Policy ID is required');
+        }
+        
+        // Create upload directory if it doesn't exist
+        $upload_dir = __DIR__ . '/uploads/policies/' . $policy_id;
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        // Document types mapping
+        $document_types = [
+            'policy_document' => 'policy_document',
+            'proposal_form' => 'proposal_form',
+            'vehicle_rc' => 'vehicle_rc',
+            'driving_license' => 'driving_license',
+            'medical_report' => 'medical_report',
+            'previous_policy' => 'previous_policy',
+            'nominee_document' => 'nominee_document',
+            'income_proof' => 'income_proof'
+        ];
+        
+        foreach ($document_types as $field_name => $doc_type) {
+            if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES[$field_name];
+                
+                // Validate file
+                $allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+                if (!in_array($file['type'], $allowed_types)) {
+                    throw new Exception("Invalid file type for $doc_type");
+                }
+                
+                if ($file['size'] > 10 * 1024 * 1024) { // 10MB limit
+                    throw new Exception("File too large for $doc_type");
+                }
+                
+                // Generate unique filename
+                $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+                $filename = $doc_type . '_' . time() . '_' . uniqid() . '.' . $extension;
+                $filepath = $upload_dir . '/' . $filename;
+                
+                if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                    // Save to database
+                    $db = Database::getInstance();
+                    $db->execute(
+                        "INSERT INTO policy_documents (policy_id, document_type, document_name, file_name, file_path, file_size, mime_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        [$policy_id, $doc_type, $doc_type, $file['name'], $filepath, $file['size'], $file['type'], $_SESSION['user_id']]
+                    );
+                    
+                    $uploaded_files[] = [
+                        'type' => $doc_type,
+                        'filename' => $filename,
+                        'original_name' => $file['name']
+                    ];
+                }
+            }
+        }
+        
+        // Handle multiple other documents
+        if (isset($_FILES['other_documents'])) {
+            foreach ($_FILES['other_documents']['name'] as $key => $name) {
+                if ($_FILES['other_documents']['error'][$key] === UPLOAD_ERR_OK) {
+                    $file = [
+                        'name' => $_FILES['other_documents']['name'][$key],
+                        'type' => $_FILES['other_documents']['type'][$key],
+                        'tmp_name' => $_FILES['other_documents']['tmp_name'][$key],
+                        'size' => $_FILES['other_documents']['size'][$key]
+                    ];
+                    
+                    // Validate file
+                    $allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                    if (!in_array($file['type'], $allowed_types)) {
+                        continue; // Skip invalid files
+                    }
+                    
+                    if ($file['size'] > 10 * 1024 * 1024) {
+                        continue; // Skip large files
+                    }
+                    
+                    // Generate unique filename
+                    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+                    $filename = 'other_' . time() . '_' . uniqid() . '.' . $extension;
+                    $filepath = $upload_dir . '/' . $filename;
+                    
+                    if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                        // Save to database
+                        $db = Database::getInstance();
+                        $db->execute(
+                            "INSERT INTO policy_documents (policy_id, document_type, document_name, file_name, file_path, file_size, mime_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                            [$policy_id, 'other', 'Other Document', $file['name'], $filepath, $file['size'], $file['type'], $_SESSION['user_id']]
+                        );
+                        
+                        $uploaded_files[] = [
+                            'type' => 'other',
+                            'filename' => $filename,
+                            'original_name' => $file['name']
+                        ];
+                    }
+                }
+            }
+        }
+        
+        echo json_encode(['success' => true, 'uploaded_files' => $uploaded_files]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+});
+
 $router->get('/api/debug/policy-types', function() {
     header('Content-Type: application/json');
     

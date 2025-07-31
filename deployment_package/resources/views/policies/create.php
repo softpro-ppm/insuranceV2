@@ -347,13 +347,116 @@
                         <!-- Document Upload -->
                         <div class="mb-4">
                             <h6 class="text-primary mb-3"><i class="fas fa-paperclip me-2"></i>Document Upload</h6>
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-file-upload me-2"></i>Policy Documents
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="policy_document" class="form-label">
+                                    Policy Document <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control" id="policy_document" name="policy_document" 
+                                       accept=".pdf,.jpg,.jpeg,.png" required>
+                                <small class="text-muted">Upload main policy document (PDF, JPG, PNG - Max 10MB)</small>
+                                <div class="preview-container mt-2" id="policy_document_preview"></div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="proposal_form" class="form-label">Proposal Form</label>
+                                <input type="file" class="form-control" id="proposal_form" name="proposal_form" 
+                                       accept=".pdf,.jpg,.jpeg,.png">
+                                <small class="text-muted">Upload filled proposal form (PDF, JPG, PNG - Max 10MB)</small>
+                                <div class="preview-container mt-2" id="proposal_form_preview"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Motor Insurance Specific Documents -->
+                        <div class="motor-documents insurance-specific-docs d-none">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-car me-2"></i>Motor Insurance Documents
+                            </h6>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Policy Documents</label>
-                                    <input type="file" class="form-control" name="policy_documents[]" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                                    <small class="text-muted">Upload policy documents, RC copy, etc.</small>
+                                    <label for="vehicle_rc" class="form-label">Vehicle RC Copy</label>
+                                    <input type="file" class="form-control" id="vehicle_rc" name="vehicle_rc" 
+                                           accept=".pdf,.jpg,.jpeg,.png">
+                                    <small class="text-muted">Upload vehicle registration certificate</small>
+                                    <div class="preview-container mt-2" id="vehicle_rc_preview"></div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="driving_license" class="form-label">Driving License</label>
+                                    <input type="file" class="form-control" id="driving_license" name="driving_license" 
+                                           accept=".pdf,.jpg,.jpeg,.png">
+                                    <small class="text-muted">Upload valid driving license</small>
+                                    <div class="preview-container mt-2" id="driving_license_preview"></div>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <!-- Health Insurance Specific Documents -->
+                        <div class="health-documents insurance-specific-docs d-none">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-heartbeat me-2"></i>Health Insurance Documents
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="medical_report" class="form-label">Medical Reports</label>
+                                    <input type="file" class="form-control" id="medical_report" name="medical_report" 
+                                           accept=".pdf,.jpg,.jpeg,.png" multiple>
+                                    <small class="text-muted">Upload medical checkup reports (if required)</small>
+                                    <div class="preview-container mt-2" id="medical_report_preview"></div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="previous_policy" class="form-label">Previous Health Policy</label>
+                                    <input type="file" class="form-control" id="previous_policy" name="previous_policy" 
+                                           accept=".pdf,.jpg,.jpeg,.png">
+                                    <small class="text-muted">Upload previous health insurance policy (if any)</small>
+                                    <div class="preview-container mt-2" id="previous_policy_preview"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Life Insurance Specific Documents -->
+                        <div class="life-documents insurance-specific-docs d-none">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-life-ring me-2"></i>Life Insurance Documents
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="nominee_document" class="form-label">Nominee ID Proof</label>
+                                    <input type="file" class="form-control" id="nominee_document" name="nominee_document" 
+                                           accept=".pdf,.jpg,.jpeg,.png">
+                                    <small class="text-muted">Upload nominee identification document</small>
+                                    <div class="preview-container mt-2" id="nominee_document_preview"></div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="income_proof" class="form-label">Income Proof</label>
+                                    <input type="file" class="form-control" id="income_proof" name="income_proof" 
+                                           accept=".pdf,.jpg,.jpeg,.png">
+                                    <small class="text-muted">Upload salary slip, ITR, or income certificate</small>
+                                    <div class="preview-container mt-2" id="income_proof_preview"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Documents -->
+                        <div class="row mt-3">
+                            <div class="col-md-12 mb-3">
+                                <label for="other_documents" class="form-label">Other Documents (Optional)</label>
+                                <input type="file" class="form-control" id="other_documents" name="other_documents[]" 
+                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple>
+                                <small class="text-muted">Upload any other relevant documents (Multiple files allowed)</small>
+                                <div class="preview-container mt-2" id="other_documents_preview"></div>
+                            </div>
+                        </div>
                         </div>
                         
                         <div class="d-flex justify-content-between mt-4">
@@ -544,6 +647,103 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById(`step${step}`).classList.remove('d-none');
         currentStep = step;
     }
+    
+    // Function to show/hide category-specific document sections
+    function updateInsuranceOptions(category) {
+        // Update policy types and companies as before
+        if (category) {
+            loadPolicyTypes(category);
+            loadInsuranceCompanies(category);
+            
+            // Show/hide category-specific document sections
+            document.querySelectorAll('.insurance-specific-docs').forEach(section => {
+                section.classList.add('d-none');
+            });
+            
+            const docsSection = document.querySelector(`.${category}-documents`);
+            if (docsSection) {
+                docsSection.classList.remove('d-none');
+            }
+        }
+    }
+    
+    // Setup file preview functionality for all file inputs
+    function setupFilePreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        
+        if (!input || !preview) return;
+        
+        input.addEventListener('change', function(e) {
+            const files = e.target.files;
+            preview.innerHTML = '';
+            
+            if (files.length > 0) {
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    
+                    if (file.type.startsWith('image/')) {
+                        reader.onload = function(e) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.className = 'img-thumbnail me-2 mb-2';
+                            img.style.maxWidth = '100px';
+                            img.style.maxHeight = '100px';
+                            preview.appendChild(img);
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        // For PDF and other files, show file info
+                        const fileInfo = document.createElement('div');
+                        fileInfo.className = 'file-info me-2 mb-2';
+                        fileInfo.innerHTML = `
+                            <div class="d-inline-flex align-items-center p-2 bg-light rounded border">
+                                <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                <div>
+                                    <small><strong>${file.name}</strong></small><br>
+                                    <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                                </div>
+                            </div>
+                        `;
+                        preview.appendChild(fileInfo);
+                    }
+                });
+            }
+        });
+    }
+    
+    // Initialize file previews for all document upload fields
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInputs = [
+            'policy_document', 'proposal_form', 'vehicle_rc', 'driving_license',
+            'medical_report', 'previous_policy', 'nominee_document', 'income_proof',
+            'other_documents'
+        ];
+        
+        fileInputs.forEach(inputId => {
+            setupFilePreview(inputId, inputId + '_preview');
+        });
+        
+        // File size validation (10MB limit for policy documents)
+        document.querySelectorAll('input[type="file"]').forEach(function(input) {
+            input.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                
+                for (let file of files) {
+                    if (file.size > maxSize) {
+                        alert(`File "${file.name}" is too large. Maximum size allowed is 10MB.`);
+                        e.target.value = '';
+                        // Clear preview
+                        const previewId = e.target.id + '_preview';
+                        const preview = document.getElementById(previewId);
+                        if (preview) preview.innerHTML = '';
+                        return;
+                    }
+                }
+            });
+        });
+    });
     
     function updateInsuranceOptions(category) {
         // Set the category value in the hidden input

@@ -85,6 +85,8 @@ CREATE TABLE IF NOT EXISTS policies (
     policy_end_date DATE NOT NULL,
     premium_amount DECIMAL(10,2) NOT NULL,
     sum_insured DECIMAL(15,2),
+    revenue DECIMAL(10,2) DEFAULT 0,
+    status ENUM('active', 'expired', 'cancelled', 'lapsed') DEFAULT 'active',
     
     -- Motor specific fields
     vehicle_number VARCHAR(50),
