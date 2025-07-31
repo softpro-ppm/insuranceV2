@@ -458,16 +458,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch policy types based on category
     async function loadPolicyTypes(category) {
         try {
+            console.log('Loading policy types for category:', category);
             const response = await fetch(`/api/policy-types?category=${category}`);
-            const policyTypes = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('Policy types response:', data);
+            
+            // Handle error response from server
+            if (data.error) {
+                throw new Error(`Server error: ${data.error}`);
+            }
+            
+            const policyTypes = Array.isArray(data) ? data : (data.data || []);
             const select = document.getElementById('policy_type_id');
             select.innerHTML = '<option value="">Select Policy Type</option>';
-            policyTypes.forEach(type => {
-                select.innerHTML += `<option value="${type.id}">${type.name} (${type.code})</option>`;
-            });
+            
+            if (policyTypes.length === 0) {
+                select.innerHTML += '<option value="" disabled>No policy types available for ' + category + '</option>';
+                console.warn('No policy types found for category:', category);
+            } else {
+                policyTypes.forEach(type => {
+                    select.innerHTML += `<option value="${type.id}">${type.name} (${type.code})</option>`;
+                });
+            }
         } catch (error) {
             console.error('Error loading policy types:', error);
-            alert('Error loading policy types. Please try again.');
+            alert(`Error loading policy types: ${error.message}. Please check the console for details.`);
+            
+            // Add debug link
+            console.log(`Debug URL: /api/debug/policy-types?category=${category}`);
         }
     }
 
