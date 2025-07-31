@@ -38,11 +38,11 @@ if ($_POST['action'] ?? '' === 'init_db') {
         
         // Execute seed data if main database setup was successful
         if (empty($errors)) {
-            $seed_file = __DIR__ . '/database/simple_seed_data.sql';
+            $seed_file = __DIR__ . '/database/complete_massive_seed_data.sql';
             if (file_exists($seed_file)) {
                 $seed_content = file_get_contents($seed_file);
                 if ($seed_content) {
-                    $success[] = "Executing seed data script...";
+                    $success[] = "Executing MASSIVE seed data script (500 customers + 700 policies)...";
                     
                     // Split into individual queries for simple seed data
                     $seed_queries = array_filter(array_map('trim', explode(';', $seed_content)));
