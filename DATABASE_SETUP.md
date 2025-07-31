@@ -1,43 +1,43 @@
 # Database Setup Guide
 
-## For Local Development
+## Production Deployment (Hostinger)
 
-If you're getting database connection errors, follow these steps:
+Since you're deploying directly from GitHub Desktop to Hostinger, you don't need local setup!
 
-### Option 1: Use Local MySQL (Recommended for Development)
+### Database Configuration
 
-1. **Install MySQL** (via XAMPP, MAMP, or standalone MySQL)
+Your production database credentials (already configured):
+- **Host:** localhost
+- **Database:** u820431346_v2insurance
+- **Username:** u820431346_v2insurance
+- **Password:** Softpro@123
 
-2. **Copy the local environment file:**
-   ```bash
-   cp .env.local .env
-   ```
+### Setup Steps
 
-3. **Create the local database:**
-   ```sql
-   CREATE DATABASE insurance_v2_local CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
+1. **Access Hostinger cPanel/phpMyAdmin**
+   - Login to your Hostinger hosting panel
+   - Open phpMyAdmin or Database Manager
 
-4. **Import the database structure:**
-   ```bash
-   mysql -u root -p insurance_v2_local < database/init_database.sql
-   ```
+2. **Import Database Structure** (if not already done)
+   - Select your database: `u820431346_v2insurance`
+   - Go to Import tab
+   - Upload the file: `database/init_database.sql`
+   - Click "Go" to import
 
-5. **Access the application:**
-   ```
-   http://localhost:8000
-   ```
+3. **Deploy via GitHub Desktop**
+   - Commit your changes in GitHub Desktop
+   - Push to main branch
+   - Hostinger will automatically sync the files
 
-### Option 2: Use Production Database
+4. **Access Your Application**
+   - URL: https://v2.insurance.softpromis.com
+   - Login: `admin` / `password`
 
-If you have access to the production database:
+### Troubleshooting
 
-1. **Keep the current .env file** with production credentials
-2. **Make sure the credentials are correct:**
-   - Host: localhost (or production server IP)
-   - Database: u820431346_v2insurance
-   - Username: u820431346_v2insurance
-   - Password: Softpro@123
+- **"Access denied" error:** Check database credentials in Hostinger panel
+- **"Database not found" error:** Make sure database exists in Hostinger
+- **"Table doesn't exist" error:** Import the database/init_database.sql file
 
 ### Default Login Credentials
 

@@ -25,22 +25,17 @@ class Database {
         } catch (PDOException $e) {
             $error_message = "Database connection failed: " . $e->getMessage();
             
-            // Add helpful debug information for developers
+            // Add helpful debug information for production deployment
             if (isset($_ENV['APP_DEBUG']) && $_ENV['APP_DEBUG']) {
                 $error_message .= "\n\nDatabase Configuration:";
                 $error_message .= "\nHost: " . $db['host'];
                 $error_message .= "\nDatabase: " . $db['database'];
                 $error_message .= "\nUsername: " . $db['username'];
                 $error_message .= "\n\nTo fix this issue:";
-                
-                if ($db['username'] === 'root' && empty($db['password'])) {
-                    $error_message .= "\n1. Make sure MySQL/XAMPP/MAMP is running";
-                    $error_message .= "\n2. Create a database named: " . $db['database'];
-                    $error_message .= "\n3. Import the database structure from: database/init_database.sql";
-                } else {
-                    $error_message .= "\n1. Check if the production database credentials are correct";
-                    $error_message .= "\n2. Or copy .env.local to .env for local development";
-                }
+                $error_message .= "\n1. Check if the production database credentials are correct in .env file";
+                $error_message .= "\n2. Ensure the database exists on your Hostinger server";
+                $error_message .= "\n3. Import the database structure using phpMyAdmin or SQL import";
+                $error_message .= "\n4. Verify that the database user has proper permissions";
             }
             
             die("<pre>" . htmlspecialchars($error_message) . "</pre>");
