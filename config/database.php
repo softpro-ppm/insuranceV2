@@ -4,6 +4,20 @@
  * Database Configuration
  */
 
+// Auto-detect local development environment
+$isLocal = (
+    strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false || 
+    strpos($_SERVER['HTTP_HOST'] ?? '', '127.0.0.1') !== false ||
+    strpos($_SERVER['HTTP_HOST'] ?? '', '.local') !== false ||
+    !isset($_SERVER['HTTP_HOST'])
+);
+
+// Use local config if we're in development
+if ($isLocal && file_exists(__DIR__ . '/database_local.php')) {
+    return require __DIR__ . '/database_local.php';
+}
+
+// Production configuration
 return [
     'default' => 'mysql',
     
