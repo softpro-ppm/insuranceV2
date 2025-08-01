@@ -1,7 +1,7 @@
 <!-- Page Header -->
 <div class="page-header">
     <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Welcome back! Here's what's happening with your insurance business today.</p>
+    <p class="page-subtitle"><?= date('M-Y') ?></p>
 </div>
 
 <!-- A. Enhanced Statistics Cards -->
@@ -15,7 +15,7 @@
             <div class="stat-number">₹<?= number_format($stats['premium_fy'] ?? 0, 0) ?></div>
             <div class="stat-label">Total Premium (<?= $stats['fy_label'] ?? 'FY' ?>)</div>
             <div class="d-flex align-items-center mt-2">
-                <small class="text-muted">Current Month: ₹<?= number_format($stats['premium_current_month'] ?? 0, 0) ?></small>
+                <small class="text-muted"><?= date('M-Y') ?>: ₹<?= number_format($stats['premium_current_month'] ?? 0, 0) ?></small>
             </div>
         </div>
     </div>
@@ -29,7 +29,7 @@
             <div class="stat-number">₹<?= number_format($stats['revenue_fy'] ?? 0, 0) ?></div>
             <div class="stat-label">Revenue (<?= $stats['fy_label'] ?? 'FY' ?>)</div>
             <div class="d-flex align-items-center mt-2">
-                <small class="text-muted">Current Month: ₹<?= number_format($stats['revenue_current_month'] ?? 0, 0) ?></small>
+                <small class="text-muted"><?= date('M-Y') ?>: ₹<?= number_format($stats['revenue_current_month'] ?? 0, 0) ?></small>
             </div>
         </div>
     </div>
@@ -41,7 +41,7 @@
                 <i class="fas fa-file-contract"></i>
             </div>
             <div class="stat-number"><?= number_format($stats['policies_current_month'] ?? 0) ?></div>
-            <div class="stat-label">New Policies (Current Month)</div>
+            <div class="stat-label">New Policies (<?= date('M-Y') ?>)</div>
             <div class="d-flex align-items-center mt-2">
                 <i class="fas fa-sync-alt text-success me-1"></i>
                 <small class="text-success">Renewed: <?= $stats['renewed_current_month'] ?? 0 ?></small>
@@ -56,7 +56,7 @@
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
             <div class="stat-number"><?= number_format($stats['pending_renewal'] ?? 0) ?></div>
-            <div class="stat-label">Pending Renewal (Current Month)</div>
+            <div class="stat-label">Pending Renewal (<?= date('M-Y') ?>)</div>
             <div class="d-flex align-items-center mt-2">
                 <small class="text-danger">Expired: <?= $stats['expired_policies'] ?? 0 ?></small>
                 <span class="mx-1">|</span>
@@ -99,9 +99,9 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-clock me-2"></i>
-                    Pending Renewal Policies (Current Month)
+                                <h5 class="card-title">
+                    <i class="fas fa-clock text-warning me-2"></i>
+                    Pending Renewal Policies (<?= date('M-Y') ?>)
                 </h5>
                 <a href="/policies" class="btn btn-sm btn-primary">
                     <i class="fas fa-list me-1"></i>

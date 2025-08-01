@@ -13,16 +13,34 @@ echo "<h1>Populating Sample Data</h1>";
 
 // Insurance Companies Data
 $companies = [
-    ['name' => 'HDFC ERGO General Insurance', 'code' => 'HDFC', 'type' => 'General', 'contact_email' => 'info@hdfcergo.com'],
-    ['name' => 'ICICI Lombard General Insurance', 'code' => 'ICICI', 'type' => 'General', 'contact_email' => 'info@icicilombard.com'],
-    ['name' => 'Bajaj Allianz General Insurance', 'code' => 'BAJAJ', 'type' => 'General', 'contact_email' => 'info@bajajallianz.co.in'],
-    ['name' => 'New India Assurance Company', 'code' => 'NIAC', 'type' => 'General', 'contact_email' => 'info@newindia.co.in'],
-    ['name' => 'United India Insurance Company', 'code' => 'UIIC', 'type' => 'General', 'contact_email' => 'info@uiic.co.in'],
-    ['name' => 'LIC of India', 'code' => 'LIC', 'type' => 'Life', 'contact_email' => 'info@licindia.in'],
-    ['name' => 'SBI Life Insurance', 'code' => 'SBIL', 'type' => 'Life', 'contact_email' => 'info@sbilife.co.in'],
-    ['name' => 'Max Life Insurance', 'code' => 'MAXL', 'type' => 'Life', 'contact_email' => 'info@maxlifeinsurance.com'],
-    ['name' => 'Star Health and Allied Insurance', 'code' => 'STAR', 'type' => 'Health', 'contact_email' => 'info@starhealth.in'],
-    ['name' => 'Apollo Munich Health Insurance', 'code' => 'APOLLO', 'type' => 'Health', 'contact_email' => 'info@apollomunich.com']
+    ['name' => 'HDFC ERGO General Insurance', 'code' => 'HDFC', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@hdfcergo.com'],
+    ['name' => 'ICICI Lombard General Insurance', 'code' => 'ICICI', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@icicilombard.com'],
+    ['name' => 'Bajaj Allianz General Insurance', 'code' => 'BAJAJ', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@bajajallianz.co.in'],
+    ['name' => 'New India Assurance Company', 'code' => 'NIAC', 'supports_motor' => 1, 'supports_health' => 0, 'supports_life' => 0, 'contact_email' => 'info@newindia.co.in'],
+    ['name' => 'United India Insurance Company', 'code' => 'UIIC', 'supports_motor' => 1, 'supports_health' => 0, 'supports_life' => 0, 'contact_email' => 'info@uiic.co.in'],
+    ['name' => 'LIC of India', 'code' => 'LIC', 'supports_motor' => 0, 'supports_health' => 0, 'supports_life' => 1, 'contact_email' => 'info@licindia.in'],
+    ['name' => 'SBI Life Insurance', 'code' => 'SBIL', 'supports_motor' => 0, 'supports_health' => 0, 'supports_life' => 1, 'contact_email' => 'info@sbilife.co.in'],
+    ['name' => 'Max Life Insurance', 'code' => 'MAXL', 'supports_motor' => 0, 'supports_health' => 0, 'supports_life' => 1, 'contact_email' => 'info@maxlifeinsurance.com'],
+    ['name' => 'Star Health and Allied Insurance', 'code' => 'STAR', 'supports_motor' => 0, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@starhealth.in'],
+    ['name' => 'Apollo Munich Health Insurance', 'code' => 'APOLLO', 'supports_motor' => 0, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@apollomunich.com'],
+    
+    // Additional companies to restore 26 total companies
+    ['name' => 'Tata AIG General Insurance', 'code' => 'TATA', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@tataaig.com'],
+    ['name' => 'Reliance General Insurance', 'code' => 'RELIC', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@reliancegeneral.co.in'],
+    ['name' => 'Future Generali India Insurance', 'code' => 'FGII', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@futuregenerali.in'],
+    ['name' => 'Royal Sundaram General Insurance', 'code' => 'RSGI', 'supports_motor' => 1, 'supports_health' => 0, 'supports_life' => 0, 'contact_email' => 'info@royalsundaram.in'],
+    ['name' => 'Cholamandalam MS General Insurance', 'code' => 'CHOLA', 'supports_motor' => 1, 'supports_health' => 0, 'supports_life' => 0, 'contact_email' => 'info@cholainsurance.com'],
+    ['name' => 'Oriental Insurance Company', 'code' => 'OICL', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@orientalinsurance.org.in'],
+    ['name' => 'National Insurance Company', 'code' => 'NICL', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@nationalinsuranceindia.com'],
+    ['name' => 'SBI General Insurance', 'code' => 'SBIG', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@sbigeneral.in'],
+    ['name' => 'Digit Insurance', 'code' => 'DIGIT', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@godigit.com'],
+    ['name' => 'Bharti AXA General Insurance', 'code' => 'BAXA', 'supports_motor' => 1, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@bharti-axagi.co.in'],
+    ['name' => 'HDFC Life Insurance', 'code' => 'HDFCL', 'supports_motor' => 0, 'supports_health' => 0, 'supports_life' => 1, 'contact_email' => 'info@hdfclife.com'],
+    ['name' => 'ICICI Prudential Life Insurance', 'code' => 'IPRU', 'supports_motor' => 0, 'supports_health' => 0, 'supports_life' => 1, 'contact_email' => 'info@iciciprulife.com'],
+    ['name' => 'Kotak Mahindra Life Insurance', 'code' => 'KMLI', 'supports_motor' => 0, 'supports_health' => 0, 'supports_life' => 1, 'contact_email' => 'info@kotaklife.com'],
+    ['name' => 'Bajaj Allianz Life Insurance', 'code' => 'BALI', 'supports_motor' => 0, 'supports_health' => 0, 'supports_life' => 1, 'contact_email' => 'info@bajajallianzlife.co.in'],
+    ['name' => 'Care Health Insurance', 'code' => 'CARE', 'supports_motor' => 0, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@careinsurance.com'],
+    ['name' => 'Niva Bupa Health Insurance', 'code' => 'NIVA', 'supports_motor' => 0, 'supports_health' => 1, 'supports_life' => 0, 'contact_email' => 'info@nivabupa.com']
 ];
 
 echo "<h2>Inserting Insurance Companies...</h2>";
@@ -31,8 +49,8 @@ foreach ($companies as $company) {
         // Check if company already exists
         $existing = $db->fetch("SELECT id FROM insurance_companies WHERE code = ?", [$company['code']]);
         if (!$existing) {
-            $sql = "INSERT INTO insurance_companies (name, code, type, contact_email, status) VALUES (?, ?, ?, ?, 'active')";
-            $db->execute($sql, [$company['name'], $company['code'], $company['type'], $company['contact_email']]);
+            $sql = "INSERT INTO insurance_companies (name, code, supports_motor, supports_health, supports_life, contact_email, status) VALUES (?, ?, ?, ?, ?, ?, 'active')";
+            $db->execute($sql, [$company['name'], $company['code'], $company['supports_motor'], $company['supports_health'], $company['supports_life'], $company['contact_email']]);
             echo "✓ Added: {$company['name']}<br>";
         } else {
             echo "- Already exists: {$company['name']}<br>";

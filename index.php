@@ -73,6 +73,13 @@ class Router {
 // Authentication middleware
 function requireAuth() {
     if (!isset($_SESSION['user_id'])) {
+        // Check if this is an AJAX request
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Authentication required', 'redirect' => '/login']);
+            exit;
+        }
         header('Location: /login');
         exit;
     }
@@ -161,6 +168,8 @@ $router->get('/dashboard', function() {
     requireAuth();
     
     $db = Database::getInstance();
+    $user_role = $_SESSION['user']['role'];
+    $user_id = $_SESSION['user']['id'];
     
     // Current date and financial year calculations
     $current_date = date('Y-m-d');
@@ -180,30 +189,71 @@ $router->get('/dashboard', function() {
         $fy_label = 'FY ' . ($current_year - 1) . '-' . $current_year;
     }
     
+    // Role-based data filtering
+    $agent_filter = '';
+    $agent_params = [];
+    
+    if ($user_role === 'agent') {
+        // Agent only sees their own policies
+        $agent_filter = ' AND agent_id = ?';
+        $agent_params = [$user_id];
+    }
+    // Receptionist and Admin see all policies
+    
     // A. Dashboard Cards Statistics
     $stats = [];
     
-    // 1. Total Premium FY & Current Month
-    $premium_fy = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$fy_start, $fy_end])['total'] ?? 0;
-    $premium_current_month = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$current_month_start, $current_month_end])['total'] ?? 0;
+    // 1. Total Premium FY & Current Month (Restricted for agents)
+    if ($user_role === 'agent') {
+        $premium_fy = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$fy_start, $fy_end], $agent_params))['total'] ?? 0;
+        $premium_current_month = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$current_month_start, $current_month_end], $agent_params))['total'] ?? 0;
+    } else {
+        $premium_fy = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$fy_start, $fy_end])['total'] ?? 0;
+        $premium_current_month = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$current_month_start, $current_month_end])['total'] ?? 0;
+    }
     
-    // 2. Revenue FY & Current Month (using commission_amount)
-    $revenue_fy = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$fy_start, $fy_end])['total'] ?? 0;
-    $revenue_current_month = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$current_month_start, $current_month_end])['total'] ?? 0;
+    // 2. Revenue FY & Current Month (Hidden for receptionist, filtered for agent)
+    if ($user_role === 'receptionist') {
+        $revenue_fy = 0; // Receptionist cannot see revenue
+        $revenue_current_month = 0;
+    } elseif ($user_role === 'agent') {
+        $revenue_fy = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$fy_start, $fy_end], $agent_params))['total'] ?? 0;
+        $revenue_current_month = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$current_month_start, $current_month_end], $agent_params))['total'] ?? 0;
+    } else {
+        $revenue_fy = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$fy_start, $fy_end])['total'] ?? 0;
+        $revenue_current_month = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$current_month_start, $current_month_end])['total'] ?? 0;
+    }
     
-    // 3. Total Policies Current Month & Renewed Current Month
-    $policies_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$current_month_start, $current_month_end])['count'] ?? 0;
-    $renewed_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ? AND policy_number LIKE '%RN%'", [$current_month_start, $current_month_end])['count'] ?? 0;
+    // 3. Total Policies Current Month & Renewed Current Month (Filtered for agent)
+    if ($user_role === 'agent') {
+        $policies_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?" . $agent_filter, array_merge([$current_month_start, $current_month_end], $agent_params))['count'] ?? 0;
+        $renewed_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ? AND policy_number LIKE '%RN%'" . $agent_filter, array_merge([$current_month_start, $current_month_end], $agent_params))['count'] ?? 0;
+    } else {
+        $policies_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$current_month_start, $current_month_end])['count'] ?? 0;
+        $renewed_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ? AND policy_number LIKE '%RN%'", [$current_month_start, $current_month_end])['count'] ?? 0;
+    }
     
-    // 4. Pending Renewal, Expired & Expiring Soon (Fixed Logic)
-    $pending_renewal = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND ? AND status = 'active'", [$current_date, $current_month_end])['count'] ?? 0;
-    $expired_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date < ? AND status = 'active'", [$current_date])['count'] ?? 0;
-    $expiring_soon = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY) AND status = 'active'", [$current_date, $current_date])['count'] ?? 0;
+    // 4. Pending Renewal, Expired & Expiring Soon (Filtered for agent)
+    if ($user_role === 'agent') {
+        $pending_renewal = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$current_date, $current_month_end], $agent_params))['count'] ?? 0;
+        $expired_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date < ? AND status = 'active'" . $agent_filter, array_merge([$current_date], $agent_params))['count'] ?? 0;
+        $expiring_soon = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY) AND status = 'active'" . $agent_filter, array_merge([$current_date, $current_date], $agent_params))['count'] ?? 0;
+    } else {
+        $pending_renewal = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND ? AND status = 'active'", [$current_date, $current_month_end])['count'] ?? 0;
+        $expired_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date < ? AND status = 'active'", [$current_date])['count'] ?? 0;
+        $expiring_soon = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY) AND status = 'active'", [$current_date, $current_date])['count'] ?? 0;
+    }
     
-    // 5. Overall Stats
+    // 5. Overall Stats (Limited for agents and receptionist)
     $total_customers = $db->fetch("SELECT COUNT(*) as count FROM customers")['count'] ?? 0;
-    $total_policies = $db->fetch("SELECT COUNT(*) as count FROM policies")['count'] ?? 0;
-    $total_agents = $db->fetch("SELECT COUNT(*) as count FROM users WHERE role = 'agent'")['count'] ?? 0;
+    
+    if ($user_role === 'agent') {
+        $total_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE agent_id = ?", [$user_id])['count'] ?? 0;
+        $total_agents = 0; // Agents can't see other agents count
+    } else {
+        $total_policies = $db->fetch("SELECT COUNT(*) as count FROM policies")['count'] ?? 0;
+        $total_agents = $db->fetch("SELECT COUNT(*) as count FROM users WHERE role = 'agent'")['count'] ?? 0;
+    }
     
     $stats = [
         'premium_fy' => $premium_fy,
@@ -218,42 +268,67 @@ $router->get('/dashboard', function() {
         'total_customers' => $total_customers,
         'total_policies' => $total_policies,
         'total_agents' => $total_agents,
-        'fy_label' => $fy_label
+        'fy_label' => $fy_label,
+        'user_role' => $user_role // Pass role to template for conditional display
     ];
     
-    // B. Chart Data - Last 12 Months
+    // B. Chart Data - Last 12 Months (Hidden for receptionist, filtered for agent)
     $chart_data = [];
-    for ($i = 11; $i >= 0; $i--) {
-        $month_start = date('Y-m-01', strtotime("-$i months"));
-        $month_end = date('Y-m-t', strtotime("-$i months"));
-        $month_label = date('M Y', strtotime("-$i months"));
-        
-        $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
-        $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
-        $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
-        
-        $chart_data[] = [
-            'month' => $month_label,
-            'policies' => $month_policies,
-            'premium' => $month_premium,
-            'revenue' => $month_revenue
-        ];
+    if ($user_role !== 'receptionist') {
+        for ($i = 11; $i >= 0; $i--) {
+            $month_start = date('Y-m-01', strtotime("-$i months"));
+            $month_end = date('Y-m-t', strtotime("-$i months"));
+            $month_label = date('M Y', strtotime("-$i months"));
+            
+            if ($user_role === 'agent') {
+                $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['count'] ?? 0;
+                $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['total'] ?? 0;
+                $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['total'] ?? 0;
+            } else {
+                $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
+                $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+                $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            }
+            
+            $chart_data[] = [
+                'month' => $month_label,
+                'policies' => $month_policies,
+                'premium' => $month_premium,
+                'revenue' => $month_revenue
+            ];
+        }
     }
     
-    // C. Pending Renewal Policies for Current Month (Fixed to show policies expiring in next 30 days)
-    $pending_renewal_policies = $db->fetchAll("
-        SELECT p.*, c.name as customer_name, c.phone as customer_phone, 
-               ic.name as company_name, pt.name as policy_type_name,
-               DATEDIFF(p.policy_end_date, CURDATE()) as days_to_expire
-        FROM policies p 
-        LEFT JOIN customers c ON p.customer_id = c.id 
-        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
-        LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
-        WHERE p.policy_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-        AND p.status = 'active'
-        ORDER BY p.policy_end_date ASC
-        LIMIT 20
-    ");
+    // C. Pending Renewal Policies for Current Month (Filtered for agent)
+    if ($user_role === 'agent') {
+        $pending_renewal_policies = $db->fetchAll("
+            SELECT p.*, c.name as customer_name, c.phone as customer_phone, 
+                   ic.name as company_name, pt.name as policy_type_name,
+                   DATEDIFF(p.policy_end_date, CURDATE()) as days_to_expire
+            FROM policies p 
+            LEFT JOIN customers c ON p.customer_id = c.id 
+            LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
+            LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
+            WHERE p.policy_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND p.status = 'active' AND p.agent_id = ?
+            ORDER BY p.policy_end_date ASC
+            LIMIT 20
+        ", [$user_id]);
+    } else {
+        $pending_renewal_policies = $db->fetchAll("
+            SELECT p.*, c.name as customer_name, c.phone as customer_phone, 
+                   ic.name as company_name, pt.name as policy_type_name,
+                   DATEDIFF(p.policy_end_date, CURDATE()) as days_to_expire
+            FROM policies p 
+            LEFT JOIN customers c ON p.customer_id = c.id 
+            LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
+            LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
+            WHERE p.policy_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND p.status = 'active'
+            ORDER BY p.policy_end_date ASC
+            LIMIT 20
+        ");
+    }
     
     view('dashboard', [
         'title' => 'Dashboard - Insurance Management System',
@@ -271,7 +346,8 @@ $router->get('/policies', function() {
     requireAuth();
     
     $db = Database::getInstance();
-    require_once __DIR__ . '/includes/DataTable.php';
+    $user_role = $_SESSION['user']['role'];
+    $user_id = $_SESSION['user']['id'];
     
     // Get search and filter parameters
     $search = $_GET['search'] ?? '';
@@ -288,16 +364,28 @@ $router->get('/policies', function() {
         $per_page = 10;
     }
     
+    // Increase results per page when searching to show more matches
+    if (!empty($search) && !isset($_GET['per_page'])) {
+        $per_page = 50; // Show more results when searching
+    }
+    
     $offset = ($page - 1) * $per_page;
     
     // Build query with filters
     $where = "WHERE 1=1";
     $params = [];
     
+    // Role-based filtering
+    if ($user_role === 'agent') {
+        $where .= " AND p.agent_id = ?";
+        $params[] = $user_id;
+    }
+    // Receptionist and Admin see all policies
+    
     if (!empty($search)) {
-        $where .= " AND (p.policy_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR ic.name LIKE ?)";
+        $where .= " AND (p.policy_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR ic.name LIKE ? OR p.premium_amount LIKE ? OR p.vehicle_number LIKE ? OR p.status LIKE ? OR p.category LIKE ?)";
         $searchTerm = '%' . $search . '%';
-        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
     }
     
     if (!empty($category)) {
@@ -391,7 +479,25 @@ $router->get('/api/chart-data', function() {
     requireAuth();
     
     $db = Database::getInstance();
+    $user_role = $_SESSION['user']['role'];
+    $user_id = $_SESSION['user']['id'];
     $period = $_GET['period'] ?? '12months';
+    
+    // Receptionist cannot access chart data (financial information)
+    if ($user_role === 'receptionist') {
+        header('Content-Type: application/json');
+        echo json_encode([]);
+        exit;
+    }
+    
+    // Role-based data filtering
+    $agent_filter = '';
+    $agent_params = [];
+    
+    if ($user_role === 'agent') {
+        $agent_filter = ' AND agent_id = ?';
+        $agent_params = [$user_id];
+    }
     
     $chart_data = [];
     
@@ -402,9 +508,15 @@ $router->get('/api/chart-data', function() {
             $month_end = date('Y-m-t', strtotime("-$i months"));
             $month_label = date('M Y', strtotime("-$i months"));
             
-            $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
-            $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
-            $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            if ($user_role === 'agent') {
+                $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['count'] ?? 0;
+                $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['total'] ?? 0;
+                $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['total'] ?? 0;
+            } else {
+                $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
+                $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+                $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            }
             
             $chart_data[] = [
                 'month' => $month_label,
@@ -428,9 +540,15 @@ $router->get('/api/chart-data', function() {
             // Stop if we've reached the end of FY
             if ($month_start > $fy_end) break;
             
-            $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
-            $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
-            $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            if ($user_role === 'agent') {
+                $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['count'] ?? 0;
+                $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['total'] ?? 0;
+                $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'" . $agent_filter, array_merge([$month_start, $month_end], $agent_params))['total'] ?? 0;
+            } else {
+                $month_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$month_start, $month_end])['count'] ?? 0;
+                $month_premium = $db->fetch("SELECT COALESCE(SUM(premium_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+                $month_revenue = $db->fetch("SELECT COALESCE(SUM(commission_amount), 0) as total FROM policies WHERE policy_start_date BETWEEN ? AND ? AND status = 'active'", [$month_start, $month_end])['total'] ?? 0;
+            }
             
             $chart_data[] = [
                 'month' => $month_label,
@@ -453,6 +571,14 @@ $router->get('/policies/create', function() {
     $insurance_companies = $db->fetchAll("SELECT * FROM insurance_companies WHERE status = 'active' ORDER BY name");
     $policy_types = $db->fetchAll("SELECT * FROM policy_types WHERE status = 'active' ORDER BY category, name");
     
+    // Load agents for assignment (exclude current user if agent)
+    $agents = [];
+    if ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'receptionist') {
+        $agents = $db->fetchAll("SELECT id, name, username FROM users WHERE role = 'agent' AND status = 'active' ORDER BY name");
+    } elseif ($_SESSION['user_role'] === 'agent') {
+        $agents = $db->fetchAll("SELECT id, name, username FROM users WHERE id = ? AND status = 'active'", [$_SESSION['user_id']]);
+    }
+    
     view('policies/create', [
         'title' => 'Add New Policy - Insurance Management System',
         'current_page' => 'add-policy',
@@ -462,7 +588,8 @@ $router->get('/policies/create', function() {
             ['title' => 'Add Policy', 'url' => '/policies/create']
         ],
         'insurance_companies' => $insurance_companies,
-        'policy_types' => $policy_types
+        'policy_types' => $policy_types,
+        'agents' => $agents
     ]);
 });
 
@@ -527,6 +654,16 @@ $router->post('/policies/store', function() {
         $policy_number = 'POL' . date('Y') . sprintf('%06d', rand(1, 999999));
         
         // Prepare base data
+        // Get agent assignment
+        $agent_id = $_POST['agent_id'] ?? $_SESSION['user_id'];
+        
+        // Validate agent assignment based on user role
+        if ($_SESSION['user_role'] === 'agent' && $agent_id != $_SESSION['user_id']) {
+            $_SESSION['error'] = 'Agents can only assign policies to themselves';
+            header('Location: /policies/create');
+            exit;
+        }
+        
         $data = [
             'policy_number' => $policy_number,
             'customer_id' => $customer_id,
@@ -537,7 +674,7 @@ $router->post('/policies/store', function() {
             'policy_end_date' => $policy_end_date,
             'premium_amount' => $premium_amount,
             'sum_insured' => $sum_insured,
-            'agent_id' => $_SESSION['user_id']
+            'agent_id' => $agent_id
         ];
         
         // Add category-specific fields
@@ -595,7 +732,6 @@ $router->get('/customers', function() {
     requireAuth();
     
     $db = Database::getInstance();
-    require_once __DIR__ . '/includes/DataTable.php';
     
     // Get search and filter parameters
     $search = $_GET['search'] ?? '';
@@ -610,6 +746,16 @@ $router->get('/customers', function() {
         $per_page = 10;
     }
     
+    // Increase results per page when searching to show more matches
+    if (!empty($search) && !isset($_GET['per_page'])) {
+        $per_page = 50; // Show more results when searching
+    }
+    
+    // Validate per_page
+    if (!in_array($per_page, [10, 30, 50, 100])) {
+        $per_page = 10;
+    }
+    
     $offset = ($page - 1) * $per_page;
     
     // Build query with filters
@@ -617,9 +763,9 @@ $router->get('/customers', function() {
     $params = [];
     
     if (!empty($search)) {
-        $where .= " AND (c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR c.customer_code LIKE ?)";
+        $where .= " AND (c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR c.customer_code LIKE ? OR c.city LIKE ? OR c.state LIKE ? OR c.address LIKE ? OR c.pan_number LIKE ? OR c.aadhar_number LIKE ?)";
         $searchTerm = '%' . $search . '%';
-        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
     }
     
     // Valid sort columns
@@ -925,6 +1071,11 @@ $router->get('/agents', function() {
         $per_page = 10;
     }
     
+    // Increase results per page when searching to show more matches
+    if (!empty($search) && !isset($_GET['per_page'])) {
+        $per_page = 50; // Show more results when searching
+    }
+    
     $offset = ($page - 1) * $per_page;
     
     // Build query with filters
@@ -932,9 +1083,9 @@ $router->get('/agents', function() {
     $params = [];
     
     if (!empty($search)) {
-        $where .= " AND (u.name LIKE ? OR u.phone LIKE ? OR u.email LIKE ?)";
+        $where .= " AND (u.name LIKE ? OR u.phone LIKE ? OR u.email LIKE ? OR u.status LIKE ? OR u.commission_rate LIKE ?)";
         $searchTerm = '%' . $search . '%';
-        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm]);
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
     }
     
     if (!empty($status)) {
@@ -1712,6 +1863,11 @@ $router->get('/api/insurance-companies', function() {
     exit;
 });
 
+// File download route with role-based access control
+$router->get('/download', function() {
+    require_once __DIR__ . '/include/file-download.php';
+});
+
 // Debug endpoint to check database status
 $router->get('/api/db-status', function() {
     requireAuth();
@@ -1746,16 +1902,29 @@ $router->get('/renewals', function() {
     requireAuth();
     
     $db = Database::getInstance();
+    
+    // Get search parameter
+    $search = $_GET['search'] ?? '';
+    
+    // Build query with search functionality
+    $where = "WHERE p.policy_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 60 DAY) AND p.status = 'active'";
+    $params = [];
+    
+    if (!empty($search)) {
+        $where .= " AND (p.policy_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR ic.name LIKE ? OR p.premium_amount LIKE ? OR p.vehicle_number LIKE ?)";
+        $searchTerm = '%' . $search . '%';
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+    }
+    
     $renewals = $db->fetchAll("
         SELECT p.*, c.name as customer_name, c.phone as customer_phone, 
                ic.name as company_name
         FROM policies p 
         LEFT JOIN customers c ON p.customer_id = c.id 
         LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
-        WHERE p.policy_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 60 DAY)
-        AND p.status = 'active'
+        $where
         ORDER BY p.policy_end_date ASC
-    ");
+    ", $params);
     
     view('renewals/index', [
         'title' => 'Policy Renewals - Insurance Management System',
@@ -1764,7 +1933,8 @@ $router->get('/renewals', function() {
             ['title' => 'Dashboard', 'url' => '/dashboard'],
             ['title' => 'Renewals', 'url' => '/renewals']
         ],
-        'renewals' => $renewals
+        'renewals' => $renewals,
+        'search' => $search
     ]);
 });
 

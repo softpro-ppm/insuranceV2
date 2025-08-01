@@ -23,13 +23,13 @@
                         
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <div class="policy-type-card" data-category="motor">
+                                <div class="policy-type-card h-100" data-category="motor">
                                     <div class="card h-100 border-2 policy-type-option">
-                                        <div class="card-body text-center">
+                                        <div class="card-body text-center d-flex flex-column">
                                             <i class="fas fa-car fa-3x text-primary mb-3"></i>
-                                            <h5>Motor Insurance</h5>
-                                            <p class="text-muted">Vehicle insurance for cars, bikes, commercial vehicles</p>
-                                            <div class="form-check mt-3">
+                                            <h5 class="mb-3">Motor Insurance</h5>
+                                            <p class="text-muted flex-grow-1">Vehicle insurance for cars, bikes, commercial vehicles</p>
+                                            <div class="form-check mt-auto">
                                                 <input class="form-check-input" type="radio" name="insurance_category" value="motor" id="motor">
                                                 <label class="form-check-label fw-bold" for="motor">
                                                     Select Motor Insurance
@@ -41,13 +41,13 @@
                             </div>
                             
                             <div class="col-md-4 mb-3">
-                                <div class="policy-type-card" data-category="health">
+                                <div class="policy-type-card h-100" data-category="health">
                                     <div class="card h-100 border-2 policy-type-option">
-                                        <div class="card-body text-center">
+                                        <div class="card-body text-center d-flex flex-column">
                                             <i class="fas fa-heart fa-3x text-success mb-3"></i>
-                                            <h5>Health Insurance</h5>
-                                            <p class="text-muted">Medical coverage for individuals and families</p>
-                                            <div class="form-check mt-3">
+                                            <h5 class="mb-3">Health Insurance</h5>
+                                            <p class="text-muted flex-grow-1">Medical coverage for individuals and families</p>
+                                            <div class="form-check mt-auto">
                                                 <input class="form-check-input" type="radio" name="insurance_category" value="health" id="health">
                                                 <label class="form-check-label fw-bold" for="health">
                                                     Select Health Insurance
@@ -59,13 +59,13 @@
                             </div>
                             
                             <div class="col-md-4 mb-3">
-                                <div class="policy-type-card" data-category="life">
+                                <div class="policy-type-card h-100" data-category="life">
                                     <div class="card h-100 border-2 policy-type-option">
-                                        <div class="card-body text-center">
+                                        <div class="card-body text-center d-flex flex-column">
                                             <i class="fas fa-life-ring fa-3x text-info mb-3"></i>
-                                            <h5>Life Insurance</h5>
-                                            <p class="text-muted">Life coverage and investment plans</p>
-                                            <div class="form-check mt-3">
+                                            <h5 class="mb-3">Life Insurance</h5>
+                                            <p class="text-muted flex-grow-1">Life coverage and investment plans</p>
+                                            <div class="form-check mt-auto">
                                                 <input class="form-check-input" type="radio" name="insurance_category" value="life" id="life">
                                                 <label class="form-check-label fw-bold" for="life">
                                                     Select Life Insurance
@@ -113,9 +113,10 @@
                             <div class="row mb-3">
                                 <div class="col-12">
                                     <label class="form-label">Select Customer <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="customer_id" name="customer_id">
-                                        <option value="">Loading customers...</option>
+                                    <select class="form-select" id="customer_id" name="customer_id" style="width: 100%;">
+                                        <option value="">Search and select customer...</option>
                                     </select>
+                                    <small class="form-text text-muted">Type customer name, phone number, or email to search</small>
                                 </div>
                             </div>
                         </div>
@@ -129,19 +130,40 @@
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                                    <input type="tel" class="form-control" name="customer_phone" required maxlength="10">
+                                    <input type="tel" class="form-control" name="customer_phone" required maxlength="10" pattern="[0-9]{10}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Email Address</label>
-                                    <input type="email" class="form-control" name="customer_email">
+                                    <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" name="customer_email" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Date of Birth</label>
-                                    <input type="date" class="form-control" name="customer_dob">
+                                    <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="customer_dob" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Gender <span class="text-danger">*</span></label>
+                                    <select class="form-control" name="customer_gender" required>
+                                        <option value="">Select Gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Occupation <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="customer_occupation" required>
                                 </div>
                                 <div class="col-md-12 mb-3">
-                                    <label class="form-label">Address</label>
-                                    <textarea class="form-control" name="customer_address" rows="2"></textarea>
+                                    <label class="form-label">Address <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" name="customer_address" rows="2" required></textarea>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">City <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="customer_city" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Pincode <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="customer_pincode" required pattern="[0-9]{6}" maxlength="6">
                                 </div>
                             </div>
                         </div>
@@ -167,7 +189,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Insurance Company <span class="text-danger">*</span></label>
-                                <select class="form-control" name="insurance_company_id" id="insuranceCompany" required>
+                                <select class="form-control select2" name="insurance_company_id" id="insuranceCompany" data-placeholder="Search and select insurance company..." required>
                                     <option value="">Select Insurance Company</option>
                                     <?php foreach ($insurance_companies as $company): ?>
                                         <option value="<?= $company['id'] ?>" 
@@ -178,6 +200,7 @@
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <small class="text-muted">Type to search insurance companies</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Policy Type <span class="text-danger">*</span></label>
@@ -202,10 +225,6 @@
                                 <label class="form-label">Premium Amount <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" name="premium_amount" step="0.01" required>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Sum Insured</label>
-                                <input type="number" class="form-control" name="sum_insured" step="0.01">
-                            </div>
                         </div>
                         
                         <!-- Motor Insurance Specific Fields -->
@@ -226,37 +245,6 @@
                                         <option value="tractor">Tractor</option>
                                         <option value="others">Others</option>
                                     </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Vehicle Make</label>
-                                    <input type="text" class="form-control" name="vehicle_make" placeholder="Honda, Maruti, etc.">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Vehicle Model</label>
-                                    <input type="text" class="form-control" name="vehicle_model" placeholder="City, Swift, etc.">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Manufacturing Year</label>
-                                    <input type="number" class="form-control" name="vehicle_year" min="1980" max="2025">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Fuel Type</label>
-                                    <select class="form-control" name="fuel_type">
-                                        <option value="">Select Fuel Type</option>
-                                        <option value="petrol">Petrol</option>
-                                        <option value="diesel">Diesel</option>
-                                        <option value="cng">CNG</option>
-                                        <option value="electric">Electric</option>
-                                        <option value="hybrid">Hybrid</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Engine Number</label>
-                                    <input type="text" class="form-control" name="engine_number">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Chassis Number</label>
-                                    <input type="text" class="form-control" name="chassis_number">
                                 </div>
                             </div>
                         </div>
@@ -330,17 +318,32 @@
                         </h5>
                         
                         <div class="row">
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label">Remarks/Notes</label>
-                                <textarea class="form-control" name="remarks" rows="3" placeholder="Any additional notes or remarks about this policy"></textarea>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Assign to Agent <span class="text-danger">*</span></label>
+                                <select class="form-control select2" name="agent_id" id="agentSelect" data-placeholder="Search and select agent..." required>
+                                    <option value="">Select Agent</option>
+                                    <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                                        <option value="<?= $_SESSION['user_id'] ?>">Admin (Direct Business)</option>
+                                    <?php endif; ?>
+                                    <?php foreach ($agents as $agent): ?>
+                                        <option value="<?= $agent['id'] ?>" <?= ($_SESSION['user_role'] === 'agent' && $_SESSION['user_id'] == $agent['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($agent['name']) ?> (<?= htmlspecialchars($agent['username']) ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <small class="text-muted">Policy will be assigned to selected agent</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Commission Percentage</label>
-                                <input type="number" class="form-control" name="commission_percentage" step="0.01" min="0" max="100">
+                                <input type="number" class="form-control" name="commission_percentage" step="0.01" min="0" max="100" value="10">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Commission Amount</label>
                                 <input type="number" class="form-control" name="commission_amount" step="0.01" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Remarks/Notes</label>
+                                <textarea class="form-control" name="remarks" rows="3" placeholder="Any additional notes or remarks about this policy"></textarea>
                             </div>
                         </div>
                         
@@ -519,11 +522,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch customers and populate dropdown
     async function loadCustomers() {
         try {
-            const response = await fetch('/api/customers');
+            const response = await fetch('/api/customers', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    const errorData = await response.json();
+                    if (errorData.redirect) {
+                        window.location.href = errorData.redirect;
+                        return;
+                    }
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const customers = await response.json();
+            
+            // Handle error response from server
+            if (customers.error) {
+                if (customers.redirect) {
+                    window.location.href = customers.redirect;
+                    return;
+                }
+                throw new Error(`Server error: ${customers.error}`);
+            }
+            
             const select = document.getElementById('customer_id');
             select.innerHTML = '<option value="">Select Customer</option>';
-            customers.forEach(customer => {
+            
+            const customersList = Array.isArray(customers) ? customers : (customers.data || []);
+            customersList.forEach(customer => {
                 select.innerHTML += `<option value="${customer.id}">${customer.customer_code} - ${customer.name} (${customer.phone})</option>`;
             });
         } catch (error) {
@@ -562,9 +595,22 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadPolicyTypes(category) {
         try {
             console.log('Loading policy types for category:', category);
-            const response = await fetch(`/api/policy-types?category=${category}`);
+            const response = await fetch(`/api/policy-types?category=${category}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            });
             
             if (!response.ok) {
+                if (response.status === 401) {
+                    const errorData = await response.json();
+                    if (errorData.redirect) {
+                        window.location.href = errorData.redirect;
+                        return;
+                    }
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
@@ -573,11 +619,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Handle error response from server
             if (data.error) {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                    return;
+                }
                 throw new Error(`Server error: ${data.error}`);
             }
             
             const policyTypes = Array.isArray(data) ? data : (data.data || []);
-            const select = document.getElementById('policy_type_id');
+            const select = document.getElementById('policyType');
             select.innerHTML = '<option value="">Select Policy Type</option>';
             
             if (policyTypes.length === 0) {
@@ -600,11 +650,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch insurance companies based on category
     async function loadInsuranceCompanies(category) {
         try {
-            const response = await fetch(`/api/insurance-companies?category=${category}`);
+            const response = await fetch(`/api/insurance-companies?category=${category}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    const errorData = await response.json();
+                    if (errorData.redirect) {
+                        window.location.href = errorData.redirect;
+                        return;
+                    }
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const companies = await response.json();
-            const select = document.getElementById('insurance_company_id');
+            
+            // Handle error response from server
+            if (companies.error) {
+                if (companies.redirect) {
+                    window.location.href = companies.redirect;
+                    return;
+                }
+                throw new Error(`Server error: ${companies.error}`);
+            }
+            
+            const select = document.getElementById('insuranceCompany');
             select.innerHTML = '<option value="">Select Insurance Company</option>';
-            companies.forEach(company => {
+            
+            const companiesList = Array.isArray(companies) ? companies : (companies.data || []);
+            companiesList.forEach(company => {
                 select.innerHTML += `<option value="${company.id}">${company.name} (${company.code})</option>`;
             });
         } catch (error) {
@@ -783,11 +863,12 @@ document.addEventListener('DOMContentLoaded', function() {
         policyTypeSelect.value = '';
     }
     
-    // Auto-calculate policy end date (1 year from start date)
+    // Auto-calculate policy end date (start date + 1 year - 1 day)
     document.getElementById('policyStartDate').addEventListener('change', function() {
         const startDate = new Date(this.value);
         const endDate = new Date(startDate);
         endDate.setFullYear(endDate.getFullYear() + 1);
+        endDate.setDate(endDate.getDate() - 1); // Subtract 1 day
         
         document.getElementById('policyEndDate').value = endDate.toISOString().split('T')[0];
     });
@@ -820,6 +901,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Vehicle number formatting
     document.querySelector('input[name="vehicle_number"]').addEventListener('input', function() {
         this.value = this.value.toUpperCase();
+    });
+});
+</script>
+
+<!-- Select2 CSS and JS for searchable dropdowns -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for searchable dropdowns
+    $('.select2').select2({
+        placeholder: function() {
+            return $(this).data('placeholder');
+        },
+        allowClear: true,
+        width: '100%'
     });
 });
 </script>

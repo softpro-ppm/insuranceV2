@@ -48,12 +48,12 @@
                             <input type="tel" class="form-control" id="alternate_phone" name="alternate_phone" pattern="[0-9]{10}">
                         </div>
                         
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="date_of_birth" class="form-label">Date of Birth</label>
-                            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" max="<?= date('Y-m-d') ?>" placeholder="dd/mm/yyyy">
+                            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" max="<?= date('Y-m-d') ?>">
                         </div>
                         
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="gender" class="form-label">Gender</label>
                             <select class="form-control" id="gender" name="gender">
                                 <option value="">Select Gender</option>
@@ -125,28 +125,71 @@
                         </div>
                     </div>
 
-                    <!-- Optional KYC Documents Upload -->
+                    <!-- Documents -->
                     <div class="row mb-4">
                         <div class="col-12">
                             <h5 class="text-primary mb-3">
-                                <i class="fas fa-file-upload me-2"></i>Upload KYC Documents (Optional)
+                                <i class="fas fa-id-card me-2"></i>Identity Documents
                             </h5>
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="aadhar_document" class="form-label">Aadhar Card Document (Optional)</label>
+                            <label for="aadhar_number" class="form-label">Aadhar Number</label>
+                            <input type="text" class="form-control" id="aadhar_number" name="aadhar_number" 
+                                   pattern="[0-9]{12}" maxlength="12" placeholder="XXXX XXXX XXXX">
+                            <small class="form-text text-muted">12-digit Aadhar number</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="pan_number" class="form-label">PAN Number</label>
+                            <input type="text" class="form-control" id="pan_number" name="pan_number" 
+                                   pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" maxlength="10" placeholder="ABCDE1234F" style="text-transform: uppercase;">
+                            <small class="form-text text-muted">10-character PAN number</small>
+                        </div>
+                    </div>
+
+                    <!-- KYC Documents Upload -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-file-upload me-2"></i>Upload KYC Documents
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="aadhar_document" class="form-label">
+                                Aadhar Card Document <span class="text-danger">*</span>
+                            </label>
                             <input type="file" class="form-control" id="aadhar_document" name="aadhar_document" 
-                                   accept=".pdf,.jpg,.jpeg,.png">
+                                   accept=".pdf,.jpg,.jpeg,.png" required>
                             <small class="form-text text-muted">Upload Aadhar card (PDF, JPG, PNG - Max 5MB)</small>
                             <div class="preview-container mt-2" id="aadhar_preview"></div>
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="pan_document" class="form-label">PAN Card Document (Optional)</label>
+                            <label for="pan_document" class="form-label">
+                                PAN Card Document <span class="text-danger">*</span>
+                            </label>
                             <input type="file" class="form-control" id="pan_document" name="pan_document" 
-                                   accept=".pdf,.jpg,.jpeg,.png">
+                                   accept=".pdf,.jpg,.jpeg,.png" required>
                             <small class="form-text text-muted">Upload PAN card (PDF, JPG, PNG - Max 5MB)</small>
                             <div class="preview-container mt-2" id="pan_preview"></div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="passport_document" class="form-label">Passport (Optional)</label>
+                            <input type="file" class="form-control" id="passport_document" name="passport_document" 
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                            <small class="form-text text-muted">Upload passport if available (PDF, JPG, PNG - Max 5MB)</small>
+                            <div class="preview-container mt-2" id="passport_preview"></div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="driving_license_document" class="form-label">Driving License (Optional)</label>
+                            <input type="file" class="form-control" id="driving_license_document" name="driving_license_document" 
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                            <small class="form-text text-muted">Upload driving license (PDF, JPG, PNG - Max 5MB)</small>
+                            <div class="preview-container mt-2" id="driving_license_preview"></div>
                         </div>
                     </div>
 
@@ -209,6 +252,8 @@ document.getElementById('pan_number').addEventListener('input', function(e) {
 // File upload preview functionality
 setupFilePreview('aadhar_document', 'aadhar_preview');
 setupFilePreview('pan_document', 'pan_preview');
+setupFilePreview('passport_document', 'passport_preview');
+setupFilePreview('driving_license_document', 'driving_license_preview');
 
 // Validate file sizes (5MB limit)
 document.querySelectorAll('input[type="file"]').forEach(function(input) {
@@ -268,6 +313,11 @@ function setupFilePreview(inputId, previewId) {
     });
 }
 
+// Format PAN number
+document.getElementById('pan_number').addEventListener('input', function(e) {
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+});
+
 // Format pincode
 document.getElementById('pincode').addEventListener('input', function(e) {
     this.value = this.value.replace(/[^0-9]/g, '');
@@ -308,4 +358,5 @@ input[type="file"]:focus {
 }
 </style>
 
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
 </script>

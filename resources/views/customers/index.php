@@ -26,15 +26,12 @@
                         'label' => 'Customer Name',
                         'sortable' => true,
                         'render' => function($customer) {
-                            $statusBadge = $customer['status'] === 'active' 
-                                ? '<span class="badge bg-success">Active</span>' 
-                                : '<span class="badge bg-danger">Inactive</span>';
                             return '<div class="d-flex align-items-center">' .
                                    '<div class="avatar-sm me-3">' .
-                                   '<div class="avatar-title bg-primary rounded-circle">' . 
+                                   '<div class="avatar-title bg-primary rounded-circle text-white">' . 
                                    strtoupper(substr($customer['name'], 0, 1)) . '</div></div>' .
                                    '<div><h6 class="mb-0">' . htmlspecialchars($customer['name']) . '</h6>' .
-                                   '<small class="text-muted">' . $statusBadge . '</small></div></div>';
+                                   '<small class="text-muted">' . htmlspecialchars($customer['customer_code']) . '</small></div></div>';
                         }
                     ],
                     [
@@ -53,11 +50,11 @@
                         'sortable' => true
                     ],
                     [
-                        'key' => 'total_policies',
+                        'key' => 'policy_count',
                         'label' => 'Total Policies',
                         'sortable' => true,
                         'render' => function($customer) {
-                            $count = $customer['total_policies'] ?? 0;
+                            $count = $customer['policy_count'] ?? 0;
                             $badgeClass = $count > 0 ? 'bg-primary' : 'bg-secondary';
                             return '<span class="badge ' . $badgeClass . '">' . $count . '</span>';
                         }
@@ -90,31 +87,11 @@
                     ]
                 ];
 
-                // Sample data - replace with actual database query
-                global $conn;
-                $stmt = $conn->prepare("
-                    SELECT c.*, 
-                           COUNT(p.id) as total_policies
-                    FROM customers c 
-                    LEFT JOIN policies p ON c.id = p.customer_id 
-                    GROUP BY c.id 
-                    ORDER BY c.created_at DESC
-                ");
-                $stmt->execute();
-                $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                // Use data passed from the controller
+                // $customers is already available from the route
 
                 // Create filters
                 $filters = [
-                    [
-                        'type' => 'select',
-                        'name' => 'status',
-                        'label' => 'Status',
-                        'options' => [
-                            '' => 'All Status',
-                            'active' => 'Active',
-                            'inactive' => 'Inactive'
-                        ]
-                    ],
                     [
                         'type' => 'select',
                         'name' => 'city',
@@ -131,16 +108,22 @@
                 ];
 
                 // Create and render DataTable
-                $dataTable = new DataTable([
-                    'id' => 'customersTable',
-                    'columns' => $columns,
-                    'data' => $customers,
+                $dataTable = new DataTable();
+                
+                $options = [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalCount' => count($customers),
+                    'per_page' => 10,
                     'filters' => $filters,
-                    'searchPlaceholder' => 'Search customers...',
-                    'exportButtons' => true
-                ]);
+                    'config' => [
+                        'id' => 'customersTable',
+                        'searchPlaceholder' => 'Search all customers (name, phone, email, city, PAN, Aadhar...)',
+                        'exportButtons' => true
+                    ]
+                ];
 
-                echo $dataTable->render();
+                echo $dataTable->render($customers, $columns, $options);
                 ?>
             </div>
         </div>

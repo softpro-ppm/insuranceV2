@@ -37,20 +37,20 @@ class DataTable {
                     <div class="col-md-6">
                         <!-- Search Box -->
                         <div class="search-box d-flex align-items-center">
-                            <form method="GET" class="d-flex">
+                            <form method="GET" class="d-flex" id="searchForm">
                                 <input type="text" 
                                        name="search" 
+                                       id="searchInput"
                                        class="form-control" 
                                        placeholder="<?= htmlspecialchars($searchPlaceholder) ?>" 
                                        value="<?= htmlspecialchars($search) ?>"
-                                       style="margin-right: 10px;">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search"></i>
-                                </button>
+                                       style="margin-right: 10px;"
+                                       autocomplete="off"
+                                       title="Search across all records in the database">
                                 <?php if (!empty($search)): ?>
-                                    <a href="<?= $base_url ?>" class="btn btn-secondary ms-2">
+                                    <button type="button" class="btn btn-secondary" onclick="clearSearch()">
                                         <i class="fas fa-times"></i>
-                                    </a>
+                                    </button>
                                 <?php endif; ?>
                                 <!-- Preserve other parameters -->
                                 <?php foreach ($_GET as $key => $value): ?>
@@ -59,6 +59,12 @@ class DataTable {
                                     <?php endif; ?>
                                 <?php endforeach; ?>
                             </form>
+                            <?php if (!empty($search)): ?>
+                                <small class="text-muted ms-2">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Searching all <?= number_format($totalCount) ?> records
+                                </small>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -111,6 +117,24 @@ class DataTable {
             
             <!-- Data Table -->
             <div class="table-responsive">
+                <style>
+                .table-dark th {
+                    background-color: #495057 !important;
+                    color: #ffffff !important;
+                    border-color: #6c757d !important;
+                    font-weight: 600 !important;
+                }
+                .table-dark th a {
+                    color: #ffffff !important;
+                    text-decoration: none !important;
+                }
+                .table-dark th a:hover {
+                    color: #e9ecef !important;
+                }
+                .table-dark th .text-muted {
+                    color: #adb5bd !important;
+                }
+                </style>
                 <table class="table table-striped table-hover">
                     <thead class="table-dark">
                         <tr>
@@ -176,7 +200,15 @@ class DataTable {
             <div class="table-footer d-flex justify-content-between align-items-center mt-3">
                 <div class="count-info">
                     <span class="text-muted">
-                        Showing <?= number_format($start_record) ?> to <?= number_format($end_record) ?> of <?= number_format($totalCount) ?> <?= $entityNamePlural ?>
+                        <?php if (!empty($search)): ?>
+                            Showing <?= number_format($start_record) ?> to <?= number_format($end_record) ?> of <?= number_format($totalCount) ?> search results
+                            <small class="d-block">
+                                <i class="fas fa-search"></i> 
+                                Found in entire database for "<?= htmlspecialchars($search) ?>"
+                            </small>
+                        <?php else: ?>
+                            Showing <?= number_format($start_record) ?> to <?= number_format($end_record) ?> of <?= number_format($totalCount) ?> <?= $entityNamePlural ?>
+                        <?php endif; ?>
                     </span>
                 </div>
                 
@@ -444,6 +476,75 @@ function renderDataTable($config) {
             <?php endif; ?>
         </div>
     </div>
+    
+    <!-- Auto Search JavaScript -->
+    <script>
+    (function() {
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
+        let searchTimeout;
+        
+        if (searchInput && searchForm) {
+            // Real-time search with minimal delay
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                
+                // Search immediately for backspace/delete, or after minimal delay for typing
+                const delay = this.value.length < searchInput.dataset.lastLength ? 100 : 200;
+                searchInput.dataset.lastLength = this.value.length;
+                
+                searchTimeout = setTimeout(function() {
+                    searchForm.submit();
+                }, delay); // 100-200ms delay - much faster response
+            });
+            
+            // Handle Enter key - immediate search
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    searchForm.submit();
+                }
+            });
+            
+            // Handle backspace/delete - immediate search
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' || e.key === 'Delete') {
+                    clearTimeout(searchTimeout);
+                    setTimeout(function() {
+                        searchForm.submit();
+                    }, 50); // Very fast for deletion
+                }
+            });
+        }
+        
+        // Clear search function
+        window.clearSearch = function() {
+            const form = document.getElementById('searchForm');
+            const searchInput = document.getElementById('searchInput');
+            
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            
+            // Remove search parameter and submit
+            const url = new URL(window.location);
+            url.searchParams.delete('search');
+            window.location.href = url.toString();
+        };
+        
+        // Add visual feedback while searching
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                if (this.value.length > 0) {
+                    this.style.borderLeft = '3px solid #007bff';
+                } else {
+                    this.style.borderLeft = '';
+                }
+            });
+        }
+    })();
+    </script>
     
     <?php
     return ob_get_clean();

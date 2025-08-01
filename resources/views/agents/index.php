@@ -124,7 +124,7 @@
                 ];
 
                 $config = [
-                    'searchPlaceholder' => 'Search agents by name, email, or phone...',
+                    'searchPlaceholder' => 'Search all agents (name, email, phone, commission rate...)',
                     'noDataMessage' => 'No agents found',
                     'entityName' => 'agent',
                     'entityNamePlural' => 'agents'
