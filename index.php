@@ -147,6 +147,15 @@ $router->get('/logout', function() {
     exit;
 });
 
+// Data Loader Route (for fixing empty dashboard)
+$router->get('/load-data', function() {
+    include 'load_data.php';
+});
+
+$router->post('/load-data', function() {
+    include 'load_data.php';
+});
+
 // Protected routes
 $router->get('/dashboard', function() {
     requireAuth();
