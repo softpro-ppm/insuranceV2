@@ -168,8 +168,8 @@ $router->get('/dashboard', function() {
     requireAuth();
     
     $db = Database::getInstance();
-    $user_role = $_SESSION['user']['role'];
-    $user_id = $_SESSION['user']['id'];
+    $user_role = $_SESSION['user_role'];
+    $user_id = $_SESSION['user_id'];
     
     // Current date and financial year calculations
     $current_date = date('Y-m-d');
@@ -346,8 +346,8 @@ $router->get('/policies', function() {
     requireAuth();
     
     $db = Database::getInstance();
-    $user_role = $_SESSION['user']['role'];
-    $user_id = $_SESSION['user']['id'];
+    $user_role = $_SESSION['user_role'];
+    $user_id = $_SESSION['user_id'];
     
     // Get search and filter parameters
     $search = $_GET['search'] ?? '';
@@ -479,8 +479,8 @@ $router->get('/api/chart-data', function() {
     requireAuth();
     
     $db = Database::getInstance();
-    $user_role = $_SESSION['user']['role'];
-    $user_id = $_SESSION['user']['id'];
+    $user_role = $_SESSION['user_role'];
+    $user_id = $_SESSION['user_id'];
     $period = $_GET['period'] ?? '12months';
     
     // Receptionist cannot access chart data (financial information)

@@ -3,13 +3,13 @@ require_once __DIR__ . '/../include/config.php';
 require_once __DIR__ . '/../include/session.php';
 
 // Check if user is logged in
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     die('Unauthorized access');
 }
 
-$user_role = $_SESSION['user']['role'];
-$user_id = $_SESSION['user']['id'];
+$user_role = $_SESSION['user_role'];
+$user_id = $_SESSION['user_id'];
 
 // Check if file parameter is provided
 if (!isset($_GET['file']) || empty($_GET['file'])) {
