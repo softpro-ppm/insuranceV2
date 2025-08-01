@@ -17,6 +17,9 @@
         <div class="card">
             <div class="card-body">
                 <?php
+                // Include DataTable class
+                require_once __DIR__ . '/../../includes/DataTable.php';
+                
                 // Prepare data for DataTable
                 $columns = [
                     [
