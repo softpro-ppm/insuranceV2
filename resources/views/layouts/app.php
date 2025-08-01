@@ -492,6 +492,13 @@
             </div>
             
             <div class="nav-item">
+                <a href="/agents" class="nav-link <?= ($current_page ?? '') === 'agents' ? 'active' : '' ?>">
+                    <i class="fas fa-user-tie"></i>
+                    <span class="nav-text">Agents</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
                 <a href="/renewals" class="nav-link <?= ($current_page ?? '') === 'renewals' ? 'active' : '' ?>">
                     <i class="fas fa-sync-alt"></i>
                     <span class="nav-text">Renewals</span>

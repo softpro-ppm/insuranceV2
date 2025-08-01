@@ -184,12 +184,17 @@ $router->get('/dashboard', function() {
     
     // 3. Total Policies Current Month & Renewed Current Month
     $policies_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ?", [$current_month_start, $current_month_end])['count'] ?? 0;
-    $renewed_current_month = $db->fetch("SELECT COUNT(*) as count FROM policy_renewals WHERE renewal_date BETWEEN ? AND ?", [$current_month_start, $current_month_end])['count'] ?? 0;
+    $renewed_current_month = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_start_date BETWEEN ? AND ? AND policy_number LIKE '%RN%'", [$current_month_start, $current_month_end])['count'] ?? 0;
     
-    // 4. Pending Renewal, Expired & Expiring Soon
-    $pending_renewal = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND ? AND status = 'active'", [$current_month_start, $current_month_end])['count'] ?? 0;
+    // 4. Pending Renewal, Expired & Expiring Soon (Fixed Logic)
+    $pending_renewal = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND ? AND status = 'active'", [$current_date, $current_month_end])['count'] ?? 0;
     $expired_policies = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date < ? AND status = 'active'", [$current_date])['count'] ?? 0;
     $expiring_soon = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE policy_end_date BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY) AND status = 'active'", [$current_date, $current_date])['count'] ?? 0;
+    
+    // 5. Overall Stats
+    $total_customers = $db->fetch("SELECT COUNT(*) as count FROM customers")['count'] ?? 0;
+    $total_policies = $db->fetch("SELECT COUNT(*) as count FROM policies")['count'] ?? 0;
+    $total_agents = $db->fetch("SELECT COUNT(*) as count FROM users WHERE role = 'agent'")['count'] ?? 0;
     
     $stats = [
         'premium_fy' => $premium_fy,
@@ -201,6 +206,9 @@ $router->get('/dashboard', function() {
         'pending_renewal' => $pending_renewal,
         'expired_policies' => $expired_policies,
         'expiring_soon' => $expiring_soon,
+        'total_customers' => $total_customers,
+        'total_policies' => $total_policies,
+        'total_agents' => $total_agents,
         'fy_label' => $fy_label
     ];
     
@@ -223,7 +231,7 @@ $router->get('/dashboard', function() {
         ];
     }
     
-    // C. Pending Renewal Policies for Current Month
+    // C. Pending Renewal Policies for Current Month (Fixed to show policies expiring in next 30 days)
     $pending_renewal_policies = $db->fetchAll("
         SELECT p.*, c.name as customer_name, c.phone as customer_phone, 
                ic.name as company_name, pt.name as policy_type_name,
@@ -232,11 +240,11 @@ $router->get('/dashboard', function() {
         LEFT JOIN customers c ON p.customer_id = c.id 
         LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
         LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
-        WHERE p.policy_end_date BETWEEN ? AND ? 
+        WHERE p.policy_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
         AND p.status = 'active'
         ORDER BY p.policy_end_date ASC
         LIMIT 20
-    ", [$current_month_start, $current_month_end]);
+    ");
     
     view('dashboard', [
         'title' => 'Dashboard - Insurance Management System',
@@ -254,15 +262,98 @@ $router->get('/policies', function() {
     requireAuth();
     
     $db = Database::getInstance();
+    require_once __DIR__ . '/includes/DataTable.php';
+    
+    // Get search and filter parameters
+    $search = $_GET['search'] ?? '';
+    $category = $_GET['category'] ?? '';
+    $status = $_GET['status'] ?? '';
+    $company = $_GET['company'] ?? '';
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $per_page = (int)($_GET['per_page'] ?? 10);
+    $sort = $_GET['sort'] ?? 'created_at';
+    $order = $_GET['order'] ?? 'desc';
+    
+    // Validate per_page
+    if (!in_array($per_page, [10, 30, 50, 100])) {
+        $per_page = 10;
+    }
+    
+    $offset = ($page - 1) * $per_page;
+    
+    // Build query with filters
+    $where = "WHERE 1=1";
+    $params = [];
+    
+    if (!empty($search)) {
+        $where .= " AND (p.policy_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR ic.name LIKE ?)";
+        $searchTerm = '%' . $search . '%';
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+    }
+    
+    if (!empty($category)) {
+        $where .= " AND p.category = ?";
+        $params[] = $category;
+    }
+    
+    if (!empty($status)) {
+        $where .= " AND p.status = ?";
+        $params[] = $status;
+    }
+    
+    if (!empty($company)) {
+        $where .= " AND p.insurance_company_id = ?";
+        $params[] = $company;
+    }
+    
+    // Valid sort columns
+    $valid_sorts = ['policy_number', 'customer_name', 'category', 'premium_amount', 'status', 'policy_start_date', 'created_at'];
+    if (!in_array($sort, $valid_sorts)) {
+        $sort = 'created_at';
+    }
+    
+    if (!in_array($order, ['asc', 'desc'])) {
+        $order = 'desc';
+    }
+    
+    // Adjust sort column for SQL query
+    $sortColumn = $sort;
+    if ($sort === 'customer_name') {
+        $sortColumn = 'c.name';
+    } elseif ($sort !== 'policy_number' && $sort !== 'category' && $sort !== 'premium_amount' && $sort !== 'status' && $sort !== 'policy_start_date' && $sort !== 'created_at') {
+        $sortColumn = 'p.created_at';
+    } else {
+        $sortColumn = 'p.' . $sort;
+    }
+    
+    // Get policies with related data
     $policies = $db->fetchAll("
-        SELECT p.*, c.name as customer_name, c.phone as customer_phone, 
-               ic.name as company_name, pt.name as policy_type_name
+        SELECT p.*, 
+               c.name as customer_name, c.phone as customer_phone, c.email as customer_email,
+               ic.name as company_name,
+               pt.name as policy_type_name,
+               u.name as agent_name
         FROM policies p 
         LEFT JOIN customers c ON p.customer_id = c.id 
-        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
+        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id
         LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
-        ORDER BY p.created_at DESC
-    ");
+        LEFT JOIN users u ON p.agent_id = u.id
+        $where
+        ORDER BY $sortColumn $order 
+        LIMIT $per_page OFFSET $offset
+    ", $params);
+    
+    // Get total count for pagination
+    $totalCount = $db->fetch("
+        SELECT COUNT(*) as count 
+        FROM policies p 
+        LEFT JOIN customers c ON p.customer_id = c.id 
+        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id
+        $where
+    ", $params)['count'];
+    
+    // Get filter options
+    $companies = $db->fetchAll("SELECT id, name FROM insurance_companies WHERE status = 'active' ORDER BY name");
     
     view('policies/index', [
         'title' => 'All Policies - Insurance Management System',
@@ -271,7 +362,18 @@ $router->get('/policies', function() {
             ['title' => 'Dashboard', 'url' => '/dashboard'],
             ['title' => 'Policies', 'url' => '/policies']
         ],
-        'policies' => $policies
+        'policies' => $policies,
+        'companies' => $companies,
+        'search' => $search,
+        'category' => $category,
+        'status' => $status,
+        'company' => $company,
+        'currentPage' => $page,
+        'totalPages' => ceil($totalCount / $per_page),
+        'totalCount' => $totalCount,
+        'per_page' => $per_page,
+        'sort' => $sort,
+        'order' => $order
     ]);
 });
 
@@ -484,13 +586,22 @@ $router->get('/customers', function() {
     requireAuth();
     
     $db = Database::getInstance();
+    require_once __DIR__ . '/includes/DataTable.php';
     
     // Get search and filter parameters
     $search = $_GET['search'] ?? '';
     $status = $_GET['status'] ?? '';
     $page = max(1, (int)($_GET['page'] ?? 1));
-    $limit = 20;
-    $offset = ($page - 1) * $limit;
+    $per_page = (int)($_GET['per_page'] ?? 10);
+    $sort = $_GET['sort'] ?? 'created_at';
+    $order = $_GET['order'] ?? 'desc';
+    
+    // Validate per_page
+    if (!in_array($per_page, [10, 30, 50, 100])) {
+        $per_page = 10;
+    }
+    
+    $offset = ($page - 1) * $per_page;
     
     // Build query with filters
     $where = "WHERE 1=1";
@@ -500,6 +611,16 @@ $router->get('/customers', function() {
         $where .= " AND (c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR c.customer_code LIKE ?)";
         $searchTerm = '%' . $search . '%';
         $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+    }
+    
+    // Valid sort columns
+    $valid_sorts = ['name', 'customer_code', 'phone', 'email', 'city', 'created_at'];
+    if (!in_array($sort, $valid_sorts)) {
+        $sort = 'created_at';
+    }
+    
+    if (!in_array($order, ['asc', 'desc'])) {
+        $order = 'desc';
     }
     
     // Get customers with policy count
@@ -512,13 +633,12 @@ $router->get('/customers', function() {
         LEFT JOIN users u ON c.created_by = u.id
         $where
         GROUP BY c.id 
-        ORDER BY c.created_at DESC 
-        LIMIT $limit OFFSET $offset
+        ORDER BY c.$sort $order 
+        LIMIT $per_page OFFSET $offset
     ", $params);
     
     // Get total count for pagination
     $totalCount = $db->fetch("SELECT COUNT(*) as count FROM customers c $where", $params)['count'];
-    $totalPages = ceil($totalCount / $limit);
     
     view('customers/index', [
         'title' => 'Customers - Insurance Management System',
@@ -530,8 +650,11 @@ $router->get('/customers', function() {
         'customers' => $customers,
         'search' => $search,
         'currentPage' => $page,
-        'totalPages' => $totalPages,
-        'totalCount' => $totalCount
+        'totalPages' => ceil($totalCount / $per_page),
+        'totalCount' => $totalCount,
+        'per_page' => $per_page,
+        'sort' => $sort,
+        'order' => $order
     ]);
 });
 
@@ -770,6 +893,291 @@ $router->post('/customers/{id}/delete', function($id) {
     }
     
     header('Location: /customers');
+    exit;
+});
+
+// Agents Management Routes
+$router->get('/agents', function() {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    require_once __DIR__ . '/includes/DataTable.php';
+    
+    // Get search and filter parameters
+    $search = $_GET['search'] ?? '';
+    $status = $_GET['status'] ?? '';
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $per_page = (int)($_GET['per_page'] ?? 10);
+    $sort = $_GET['sort'] ?? 'created_at';
+    $order = $_GET['order'] ?? 'desc';
+    
+    // Validate per_page
+    if (!in_array($per_page, [10, 30, 50, 100])) {
+        $per_page = 10;
+    }
+    
+    $offset = ($page - 1) * $per_page;
+    
+    // Build query with filters
+    $where = "WHERE u.role = 'agent'";
+    $params = [];
+    
+    if (!empty($search)) {
+        $where .= " AND (u.name LIKE ? OR u.phone LIKE ? OR u.email LIKE ?)";
+        $searchTerm = '%' . $search . '%';
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm]);
+    }
+    
+    if (!empty($status)) {
+        $where .= " AND u.status = ?";
+        $params[] = $status;
+    }
+    
+    // Valid sort columns
+    $valid_sorts = ['name', 'email', 'phone', 'status', 'created_at'];
+    if (!in_array($sort, $valid_sorts)) {
+        $sort = 'created_at';
+    }
+    
+    if (!in_array($order, ['asc', 'desc'])) {
+        $order = 'desc';
+    }
+    
+    // Get agents with their performance data
+    $agents = $db->fetchAll("
+        SELECT u.*, 
+               COUNT(p.id) as total_policies,
+               COALESCE(SUM(p.premium_amount), 0) as total_premium,
+               COALESCE(SUM(p.commission_amount), 0) as total_commission
+        FROM users u 
+        LEFT JOIN policies p ON u.id = p.agent_id AND p.status = 'active'
+        $where
+        GROUP BY u.id 
+        ORDER BY u.$sort $order 
+        LIMIT $per_page OFFSET $offset
+    ", $params);
+    
+    // Get total count for pagination
+    $totalCount = $db->fetch("SELECT COUNT(*) as count FROM users u $where", $params)['count'];
+    
+    view('agents/index', [
+        'title' => 'Agents Management - Insurance Management System',
+        'current_page' => 'agents',
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Agents', 'url' => '/agents']
+        ],
+        'agents' => $agents,
+        'search' => $search,
+        'status' => $status,
+        'currentPage' => $page,
+        'totalPages' => ceil($totalCount / $per_page),
+        'totalCount' => $totalCount,
+        'per_page' => $per_page,
+        'sort' => $sort,
+        'order' => $order
+    ]);
+});
+
+$router->get('/agents/create', function() {
+    requireAuth();
+    
+    view('agents/create', [
+        'title' => 'Add Agent - Insurance Management System',
+        'current_page' => 'agents',
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Agents', 'url' => '/agents'],
+            ['title' => 'Add Agent', 'url' => '/agents/create']
+        ]
+    ]);
+});
+
+$router->post('/agents/create', function() {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    
+    $name = $_POST['name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $phone = $_POST['phone'] ?? '';
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $status = $_POST['status'] ?? 'active';
+    
+    // Validation
+    $errors = [];
+    
+    if (empty($name)) $errors[] = "Name is required";
+    if (empty($email)) $errors[] = "Email is required";
+    if (empty($phone)) $errors[] = "Phone is required";
+    if (empty($username)) $errors[] = "Username is required";
+    if (empty($password)) $errors[] = "Password is required";
+    
+    // Check for existing email or username
+    if (!empty($email)) {
+        $existing = $db->fetch("SELECT id FROM users WHERE email = ?", [$email]);
+        if ($existing) $errors[] = "Email already exists";
+    }
+    
+    if (!empty($username)) {
+        $existing = $db->fetch("SELECT id FROM users WHERE username = ?", [$username]);
+        if ($existing) $errors[] = "Username already exists";
+    }
+    
+    if (!empty($phone)) {
+        $existing = $db->fetch("SELECT id FROM users WHERE phone = ?", [$phone]);
+        if ($existing) $errors[] = "Phone number already exists";
+    }
+    
+    if (!empty($errors)) {
+        $_SESSION['error'] = implode('<br>', $errors);
+        header('Location: /agents/create');
+        exit;
+    }
+    
+    // Create agent
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    
+    $result = $db->query("
+        INSERT INTO users (name, email, phone, username, password, role, status) 
+        VALUES (?, ?, ?, ?, ?, 'agent', ?)
+    ", [$name, $email, $phone, $username, $hashedPassword, $status]);
+    
+    if ($result) {
+        $_SESSION['success'] = "Agent added successfully!";
+        header('Location: /agents');
+    } else {
+        $_SESSION['error'] = "Failed to add agent";
+        header('Location: /agents/create');
+    }
+    exit;
+});
+
+$router->get('/agents/(\d+)/edit', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $agent = $db->fetch("SELECT * FROM users WHERE id = ? AND role = 'agent'", [$id]);
+    
+    if (!$agent) {
+        $_SESSION['error'] = "Agent not found";
+        header('Location: /agents');
+        exit;
+    }
+    
+    view('agents/edit', [
+        'title' => 'Edit Agent - Insurance Management System',
+        'current_page' => 'agents',
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Agents', 'url' => '/agents'],
+            ['title' => 'Edit Agent', 'url' => "/agents/$id/edit"]
+        ],
+        'agent' => $agent
+    ]);
+});
+
+$router->post('/agents/(\d+)/edit', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $agent = $db->fetch("SELECT * FROM users WHERE id = ? AND role = 'agent'", [$id]);
+    
+    if (!$agent) {
+        $_SESSION['error'] = "Agent not found";
+        header('Location: /agents');
+        exit;
+    }
+    
+    $name = $_POST['name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $phone = $_POST['phone'] ?? '';
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $status = $_POST['status'] ?? 'active';
+    
+    // Validation
+    $errors = [];
+    
+    if (empty($name)) $errors[] = "Name is required";
+    if (empty($email)) $errors[] = "Email is required";
+    if (empty($phone)) $errors[] = "Phone is required";
+    if (empty($username)) $errors[] = "Username is required";
+    
+    // Check for existing email or username (excluding current agent)
+    if (!empty($email)) {
+        $existing = $db->fetch("SELECT id FROM users WHERE email = ? AND id != ?", [$email, $id]);
+        if ($existing) $errors[] = "Email already exists";
+    }
+    
+    if (!empty($username)) {
+        $existing = $db->fetch("SELECT id FROM users WHERE username = ? AND id != ?", [$username, $id]);
+        if ($existing) $errors[] = "Username already exists";
+    }
+    
+    if (!empty($phone)) {
+        $existing = $db->fetch("SELECT id FROM users WHERE phone = ? AND id != ?", [$phone, $id]);
+        if ($existing) $errors[] = "Phone number already exists";
+    }
+    
+    if (!empty($errors)) {
+        $_SESSION['error'] = implode('<br>', $errors);
+        header("Location: /agents/$id/edit");
+        exit;
+    }
+    
+    // Update agent
+    if (!empty($password)) {
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $result = $db->query("
+            UPDATE users SET name = ?, email = ?, phone = ?, username = ?, password = ?, status = ?, updated_at = NOW()
+            WHERE id = ?
+        ", [$name, $email, $phone, $username, $hashedPassword, $status, $id]);
+    } else {
+        $result = $db->query("
+            UPDATE users SET name = ?, email = ?, phone = ?, username = ?, status = ?, updated_at = NOW()
+            WHERE id = ?
+        ", [$name, $email, $phone, $username, $status, $id]);
+    }
+    
+    if ($result) {
+        $_SESSION['success'] = "Agent updated successfully!";
+        header('Location: /agents');
+    } else {
+        $_SESSION['error'] = "Failed to update agent";
+        header("Location: /agents/$id/edit");
+    }
+    exit;
+});
+
+$router->post('/agents/(\d+)/delete', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $agent = $db->fetch("SELECT * FROM users WHERE id = ? AND role = 'agent'", [$id]);
+    
+    if (!$agent) {
+        $_SESSION['error'] = "Agent not found";
+        header('Location: /agents');
+        exit;
+    }
+    
+    // Check if agent has policies
+    $policyCount = $db->fetch("SELECT COUNT(*) as count FROM policies WHERE agent_id = ?", [$id])['count'];
+    
+    if ($policyCount > 0) {
+        $_SESSION['error'] = "Cannot delete agent with existing policies. Please reassign policies first.";
+    } else {
+        $result = $db->query("DELETE FROM users WHERE id = ?", [$id]);
+        if ($result) {
+            $_SESSION['success'] = "Agent deleted successfully!";
+        } else {
+            $_SESSION['error'] = "Failed to delete agent";
+        }
+    }
+    
+    header('Location: /agents');
     exit;
 });
 
