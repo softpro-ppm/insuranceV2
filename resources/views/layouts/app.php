@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?? 'Insurance Management System v2.0' ?></title>
-    <link rel="shortcut icon" href="/assets/logo.PNG">
+    <link rel="shortcut icon" href="/assets/images/optimized/logo-favicon.png">
     
     <!-- Bootstrap 5.3.0 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -285,16 +285,16 @@
         /* Statistics Cards */
         .stat-card {
             background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.06);
             transition: all 0.3s ease;
-            border-left: 4px solid var(--primary-color);
+            border-left: 3px solid var(--primary-color);
         }
 
         .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.12);
         }
 
         .stat-card.success {
@@ -314,15 +314,15 @@
         }
 
         .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             color: white;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .stat-icon.primary {
@@ -346,15 +346,15 @@
         }
 
         .stat-number {
-            font-size: 2rem;
+            font-size: 1.6rem;
             font-weight: 700;
             color: var(--dark-color);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         .stat-label {
             color: var(--text-muted);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
         }
 
@@ -476,8 +476,8 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="/dashboard" class="sidebar-logo">
-                <i class="fas fa-shield-alt"></i>
-                <span class="logo-text">InsuranceV2</span>
+                <img src="/assets/images/optimized/logo-navbar.png" alt="Insurance CRM" style="width: 32px; height: 32px; margin-right: 8px;">
+                <span class="logo-text">Insurance CRM</span>
             </a>
         </div>
         
@@ -1136,7 +1136,7 @@
                                     <label for="vehicleNumber" class="form-label">
                                         Vehicle Number <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" class="form-control" id="vehicleNumber" name="vehicle_number" 
+                                    <input type="text" class="form-control" id="vehicleNumber" name="vehicleNumber" 
                                            placeholder="e.g., DL1CAB1234" required style="text-transform: uppercase;">
                                 </div>
                                 
@@ -1145,7 +1145,7 @@
                                     <label for="customerPhone" class="form-label">
                                         Customer Phone <span class="text-danger">*</span>
                                     </label>
-                                    <input type="tel" class="form-control" id="customerPhone" name="customer_phone" 
+                                    <input type="tel" class="form-control" id="customerPhone" name="customerPhone" 
                                            placeholder="10-digit mobile number" required maxlength="10" pattern="[0-9]{10}">
                                 </div>
                                 
@@ -1154,14 +1154,14 @@
                                     <label for="customerName" class="form-label">
                                         Customer Name <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" class="form-control" id="customerName" name="customer_name" 
+                                    <input type="text" class="form-control" id="customerName" name="customerName" 
                                            placeholder="Full name as per documents" required>
                                 </div>
                                 
                                 <!-- Email -->
                                 <div class="col-md-6">
                                     <label for="customerEmail" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="customerEmail" name="customer_email" 
+                                    <input type="email" class="form-control" id="customerEmail" name="customerEmail" 
                                            placeholder="customer@example.com">
                                 </div>
                                 
@@ -1170,8 +1170,18 @@
                                     <label for="insuranceCompany" class="form-label">
                                         Insurance Company <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-control select2" id="insuranceCompany" name="insurance_company_id" required>
+                                    <select class="form-control select2" id="insuranceCompany" name="insuranceCompany" required>
                                         <option value="">Select Insurance Company</option>
+                                        <option value="1">ICICI Lombard</option>
+                                        <option value="2">HDFC ERGO</option>
+                                        <option value="3">Bajaj Allianz</option>
+                                        <option value="4">SBI General</option>
+                                        <option value="5">Tata AIG</option>
+                                        <option value="6">Star Health</option>
+                                        <option value="7">LIC of India</option>
+                                        <option value="8">Max Life</option>
+                                        <option value="9">New India Assurance</option>
+                                        <option value="10">Oriental Insurance</option>
                                     </select>
                                 </div>
                                 
@@ -1180,7 +1190,7 @@
                                     <label for="vehicleType" class="form-label">
                                         Vehicle Type <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-control" id="vehicleType" name="vehicle_type" required>
+                                    <select class="form-control" id="vehicleType" name="vehicleType" required>
                                         <option value="">Select Vehicle Type</option>
                                         <option value="Comprehensive">Comprehensive (Full)</option>
                                         <option value="Standalone OD">Standalone OD</option>
@@ -1193,7 +1203,7 @@
                                     <label for="policyStartDate" class="form-label">
                                         Policy Start Date <span class="text-danger">*</span>
                                     </label>
-                                    <input type="date" class="form-control" id="policyStartDate" name="policy_start_date" required>
+                                    <input type="date" class="form-control" id="policyStartDate" name="policyStartDate" required>
                                 </div>
                                 
                                 <!-- Policy Expiry Date -->
@@ -1235,7 +1245,7 @@
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        <input type="number" class="form-control" id="customerPaid" name="customer_paid" 
+                                        <input type="number" class="form-control" id="customerPaid" name="customerPaid" 
                                                placeholder="0.00" required step="0.01" min="0">
                                     </div>
                                 </div>
@@ -1261,9 +1271,15 @@
                                     <label for="businessType" class="form-label">
                                         Business Type <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-control select2" id="businessType" name="business_type" required>
+                                    <select class="form-control select2" id="businessType" name="businessType" required>
                                         <option value="">Select Business Type</option>
                                         <option value="admin_rajesh">Admin Rajesh</option>
+                                        <option value="agent_1">Agent: John Doe</option>
+                                        <option value="agent_2">Agent: Jane Smith</option>
+                                        <option value="agent_3">Agent: Mike Johnson</option>
+                                        <option value="direct_business">Direct Business</option>
+                                        <option value="referral">Referral</option>
+                                        <option value="online">Online</option>
                                     </select>
                                 </div>
                             </div>
@@ -1283,14 +1299,14 @@
                                         <label for="policyDocument" class="form-label">
                                             Policy Document <span class="text-danger">*</span>
                                         </label>
-                                        <input type="file" class="form-control" id="policyDocument" name="policy_document" 
+                                        <input type="file" class="form-control" id="policyDocument" name="policyDocument" 
                                                accept=".pdf,.jpg,.jpeg,.png" required>
                                         <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
                                     </div>
                                     
                                     <div class="mb-3">
                                         <label for="rcDocument" class="form-label">RC Document</label>
-                                        <input type="file" class="form-control" id="rcDocument" name="rc_document" 
+                                        <input type="file" class="form-control" id="rcDocument" name="rcDocument" 
                                                accept=".pdf,.jpg,.jpeg,.png">
                                         <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
                                     </div>
@@ -1301,14 +1317,14 @@
                                     
                                     <div class="mb-3">
                                         <label for="aadharCard" class="form-label">Aadhar Card</label>
-                                        <input type="file" class="form-control" id="aadharCard" name="aadhar_card" 
+                                        <input type="file" class="form-control" id="aadharCard" name="aadharCard" 
                                                accept=".pdf,.jpg,.jpeg,.png">
                                         <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
                                     </div>
                                     
                                     <div class="mb-3">
                                         <label for="panCard" class="form-label">PAN Card</label>
-                                        <input type="file" class="form-control" id="panCard" name="pan_card" 
+                                        <input type="file" class="form-control" id="panCard" name="panCard" 
                                                accept=".pdf,.jpg,.jpeg,.png">
                                         <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
                                     </div>
@@ -1488,6 +1504,7 @@
             if (startDate) {
                 const expiryDate = new Date(startDate);
                 expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                expiryDate.setDate(expiryDate.getDate() - 1); // Subtract 1 day for correct expiry
                 $('#policyExpiryDate').val(expiryDate.toISOString().split('T')[0]);
             }
         });
@@ -1498,8 +1515,11 @@
             const payout = parseFloat($('#payout').val()) || 0;
             const customerPaid = parseFloat($('#customerPaid').val()) || 0;
             
-            const actualAmount = premium - payout;
-            const revenue = actualAmount - customerPaid;
+            // Correct revenue calculation: 
+            // Step 1: Actual Payable = Premium - Payout
+            // Step 2: Revenue = Customer Paid - Actual Payable
+            const actualPayable = premium - payout;
+            const revenue = customerPaid - actualPayable;
             
             $('#revenue').val(revenue.toFixed(2));
             
@@ -1515,8 +1535,14 @@
                 revenueField.addClass('text-warning');
             }
             
-            // Update actual amount display (you can add a field for this if needed)
-            console.log('Actual Amount (Premium - Payout):', actualAmount.toFixed(2));
+            // Log calculation for debugging
+            console.log('Revenue Calculation:', {
+                premium: premium,
+                payout: payout,
+                customerPaid: customerPaid,
+                actualPayable: actualPayable.toFixed(2),
+                revenue: revenue.toFixed(2)
+            });
         }
         
         $(document).on('input', '#premium, #payout, #customerPaid', function() {
@@ -1535,11 +1561,14 @@
         
         // Form submission
         function submitPolicy() {
+            console.log('=== SUBMIT POLICY STARTED ===');
             const form = document.getElementById('addPolicyForm');
             
             // Custom validation
             let isValid = true;
             let errorMessage = '';
+            
+            console.log('selectedCategory:', selectedCategory);
             
             // Check required fields
             const requiredFields = {
@@ -1555,12 +1584,14 @@
                 'businessType': 'Business Type'
             };
             
+            console.log('Validating required fields...');
             for (const [fieldId, fieldName] of Object.entries(requiredFields)) {
                 const field = document.getElementById(fieldId);
-                if (!field.value.trim()) {
+                console.log(`${fieldName}: "${field ? field.value : 'FIELD NOT FOUND'}"`);
+                if (!field || !field.value.trim()) {
                     isValid = false;
                     errorMessage = `${fieldName} is required`;
-                    field.focus();
+                    if (field) field.focus();
                     break;
                 }
             }
@@ -1601,6 +1632,7 @@
             }
             
             if (!isValid) {
+                console.log('Validation failed:', errorMessage);
                 Swal.fire({
                     icon: 'error',
                     title: 'Validation Error',
@@ -1609,13 +1641,40 @@
                 return;
             }
             
+            console.log('Validation passed, creating FormData...');
             const formData = new FormData(form);
+            
+            // Ensure we have a category
+            if (!selectedCategory) {
+                console.warn('No category selected, defaulting to motor');
+                selectedCategory = 'motor';
+            }
+            
             formData.append('category', selectedCategory);
+            
+            // Log all form data
+            console.log('Form data being sent:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}:`, value);
+            }
             
             // Show loading
             const submitBtn = $('#submitPolicyBtn');
             const originalText = submitBtn.html();
             submitBtn.html('<i class="fas fa-spinner fa-spin me-2"></i>Submitting...').prop('disabled', true);
+            
+            console.log('Sending AJAX request to /add-policy...');
+            
+            // Add a timeout to detect hanging requests
+            let requestTimeout = setTimeout(function() {
+                console.error('Request timeout after 30 seconds!');
+                submitBtn.html(originalText).prop('disabled', false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Request Timeout',
+                    text: 'The request is taking too long. Please try again.'
+                });
+            }, 30000);
             
             $.ajax({
                 url: '/add-policy',
@@ -1623,7 +1682,15 @@
                 data: formData,
                 processData: false,
                 contentType: false,
+                timeout: 30000, // 30 second timeout
+                beforeSend: function(xhr, settings) {
+                    console.log('AJAX beforeSend triggered');
+                    console.log('Request URL:', settings.url);
+                    console.log('Request method:', settings.type);
+                },
                 success: function(response) {
+                    clearTimeout(requestTimeout);
+                    console.log('AJAX Success response:', response);
                     if (response.success) {
                         Swal.fire({
                             icon: 'success',
@@ -1640,6 +1707,7 @@
                             }
                         });
                     } else {
+                        console.error('Server returned error:', response);
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
@@ -1647,22 +1715,30 @@
                         });
                     }
                 },
-                error: function(xhr) {
+                error: function(xhr, status, error) {
+                    clearTimeout(requestTimeout);
+                    console.error('AJAX Error:', status, error);
+                    console.error('Response text:', xhr.responseText);
+                    console.error('Status code:', xhr.status);
+                    console.error('Ready state:', xhr.readyState);
+                    
                     let errorMessage = 'Failed to submit policy. Please try again.';
                     try {
                         const response = JSON.parse(xhr.responseText);
                         errorMessage = response.message || errorMessage;
                     } catch (e) {
-                        // Use default message
+                        console.error('Failed to parse error response:', e);
                     }
                     
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: errorMessage
+                        text: errorMessage + ' (Status: ' + xhr.status + ')'
                     });
                 },
-                complete: function() {
+                complete: function(xhr, status) {
+                    clearTimeout(requestTimeout);
+                    console.log('AJAX request completed with status:', status);
                     submitBtn.html(originalText).prop('disabled', false);
                 }
             });
@@ -1688,35 +1764,51 @@
         });
         
         function loadInsuranceCompanies() {
+            console.log('Loading insurance companies...');
             $.ajax({
                 url: '/get-insurance-companies',
                 method: 'GET',
                 success: function(response) {
+                    console.log('Insurance companies response:', response);
                     const select = $('#insuranceCompany');
-                    select.empty().append('<option value="">Select Insurance Company</option>');
-                    
-                    if (response.success && response.companies) {
+                    // Only clear and reload if we get data from server
+                    if (response.success && response.companies && response.companies.length > 0) {
+                        select.empty().append('<option value="">Select Insurance Company</option>');
                         response.companies.forEach(company => {
                             select.append(`<option value="${company.id}">${company.name}</option>`);
                         });
+                        console.log('Added', response.companies.length, 'insurance companies');
+                    } else {
+                        console.log('Using default insurance companies (no data from server)');
                     }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error loading insurance companies:', error, 'Using defaults');
                 }
             });
         }
         
         function loadBusinessTypes() {
+            console.log('Loading business types...');
             $.ajax({
                 url: '/get-business-types',
                 method: 'GET',
                 success: function(response) {
+                    console.log('Business types response:', response);
                     const select = $('#businessType');
-                    select.empty().append('<option value="">Select Business Type</option>');
-                    
-                    if (response.success && response.types) {
+                    // Only clear and reload if we get data from server
+                    if (response.success && response.types && response.types.length > 0) {
+                        select.empty().append('<option value="">Select Business Type</option>');
                         response.types.forEach(type => {
                             select.append(`<option value="${type.value}">${type.label}</option>`);
                         });
+                        console.log('Added', response.types.length, 'business types');
+                    } else {
+                        console.log('Using default business types (no data from server)');
                     }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error loading business types:', error, 'Using defaults');
                 }
             });
         }

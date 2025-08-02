@@ -146,10 +146,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-container">
         <div class="login-header">
             <div class="company-logo">
-                <i class="fas fa-shield-alt"></i>
+                <img src="/assets/images/optimized/logo-login.png" alt="Insurance CRM" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
             </div>
             <h4 class="mb-0">Agent Portal</h4>
-            <p class="mb-0 opacity-75">Insurance Management System</p>
+            <p class="mb-0 opacity-75">Insurance CRM v2.0</p>
         </div>
         
         <div class="login-body">

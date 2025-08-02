@@ -1,11 +1,10 @@
 <!-- Page Header -->
 <div class="page-header">
     <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle"><?= date('M-Y') ?></p>
 </div>
 
 <!-- A. Enhanced Statistics Cards -->
-<div class="row g-4 mb-4">
+<div class="row g-3 mb-3">
     <!-- Total Premium Card -->
     <div class="col-lg-3 col-md-6">
         <div class="stat-card primary">

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Insurance Management System v2.0</title>
-    <link rel="shortcut icon" href="/assets/logo.PNG">
+    <title>Login - Insurance CRM v2.0</title>
+    <link rel="shortcut icon" href="/assets/images/optimized/logo-favicon.png">
     
     <!-- Bootstrap 5.3.0 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -73,6 +73,14 @@
         .logo-section {
             text-align: center;
             margin-bottom: 2.5rem;
+        }
+
+        .logo-image {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 1.5rem;
+            display: block;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
         }
 
         .logo-icon {
@@ -265,11 +273,9 @@
     <div class="login-container">
         <div class="login-card">
             <div class="logo-section">
-                <div class="logo-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <h1 class="app-title">InsuranceV2</h1>
-                <p class="app-subtitle">Management System</p>
+                <img src="/assets/images/optimized/logo-login.png" alt="Insurance CRM" class="logo-image">
+                <h1 class="app-title">Insurance CRM</h1>
+                <p class="app-subtitle">Version 2.0</p>
             </div>
 
             <?php if (isset($_SESSION['error'])): ?>
@@ -299,10 +305,10 @@
                                class="form-control" 
                                id="username" 
                                name="username" 
-                               placeholder="Enter your username"
+                               placeholder="Enter your user ID"
                                required 
                                autocomplete="username"
-                               value="<?= htmlspecialchars($_POST['username'] ?? 'admin') ?>">
+                               value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
                     </div>
                 </div>
 

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logo Preview - Insurance Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .preview-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .logo-preview {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .size-info {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .comparison {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .logo-item {
+            text-align: center;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Logo Implementation Preview</h1>
+    
+    <div class="preview-section">
+        <h2>Logo Size Comparison</h2>
+        <div class="comparison">
+            <div class="logo-item">
+                <h3>Login Page Logo (200x200)</h3>
+                <img src="assets/images/optimized/logo-login.png" alt="Login Logo" style="width: 120px; height: 120px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div class="size-info">20KB - Used in login pages</div>
+            </div>
+            
+            <div class="logo-item">
+                <h3>Navbar Logo (64x64)</h3>
+                <img src="assets/images/optimized/logo-navbar.png" alt="Navbar Logo" style="width: 32px; height: 32px;">
+                <div class="size-info">4.7KB - Used in sidebar</div>
+            </div>
+            
+            <div class="logo-item">
+                <h3>Favicon (32x32)</h3>
+                <img src="assets/images/optimized/logo-favicon.png" alt="Favicon" style="width: 32px; height: 32px;">
+                <div class="size-info">1.9KB - Used as favicon</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="preview-section">
+        <h2>Login Page Preview</h2>
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; border-radius: 12px;">
+            <div style="background: white; max-width: 400px; margin: 0 auto; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
+                <img src="assets/images/optimized/logo-login.png" alt="Insurance Management System" style="width: 120px; height: 120px; margin: 0 auto 20px; display: block; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <h1 style="margin: 0 0 5px 0; font-size: 1.8rem; color: #1e293b;">InsuranceV2</h1>
+                <p style="margin: 0 0 30px 0; color: #64748b;">Management System</p>
+                <div style="text-align: left;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Username</label>
+                    <input type="text" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Password</label>
+                    <input type="password" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; margin-bottom: 30px;">
+                    <button style="width: 100%; padding: 12px; background: #6366f1; color: white; border: none; border-radius: 8px; font-weight: 600;">Login to Portal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="preview-section">
+        <h2>File Size Optimization Results</h2>
+        <ul>
+            <li><strong>Original logo.PNG:</strong> 937KB (3456x3456 pixels)</li>
+            <li><strong>Login version:</strong> 20KB (200x200 pixels) - <span style="color: green;">98% smaller!</span></li>
+            <li><strong>Navbar version:</strong> 4.7KB (64x64 pixels) - <span style="color: green;">99.5% smaller!</span></li>
+            <li><strong>Favicon version:</strong> 1.9KB (32x32 pixels) - <span style="color: green;">99.8% smaller!</span></li>
+        </ul>
+        <p style="color: #059669; font-weight: 600;">Total savings: Over 900KB reduced while maintaining visual quality!</p>
+    </div>
+</body>
+</html>

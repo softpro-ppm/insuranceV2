@@ -1942,10 +1942,10 @@ $router->get('/agent-login', function() {
         <div class="login-container">
             <div class="login-header">
                 <div class="company-logo">
-                    <i class="fas fa-shield-alt"></i>
+                    <img src="/assets/images/optimized/logo-login.png" alt="Insurance CRM" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                 </div>
                 <h4 class="mb-0">Agent Portal</h4>
-                <p class="mb-0 opacity-75">Insurance Management System</p>
+                <p class="mb-0 opacity-75">Insurance CRM v2.0</p>
             </div>
             
             <div class="login-body">
@@ -2428,10 +2428,14 @@ $router->post('/add-policy', function() {
     try {
         $db = Database::getInstance();
         
+        // Log received data for debugging
+        error_log("Add Policy Request: " . json_encode($_POST));
+        error_log("Files received: " . json_encode(array_keys($_FILES)));
+        
         // Validate required fields
-        $required_fields = ['category', 'vehicle_number', 'customer_phone', 'customer_name', 
-                           'insurance_company_id', 'vehicle_type', 'policy_start_date', 
-                           'premium', 'payout', 'customer_paid', 'business_type'];
+        $required_fields = ['category', 'vehicleNumber', 'customerPhone', 'customerName', 
+                           'insuranceCompany', 'vehicleType', 'policyStartDate', 
+                           'premium', 'payout', 'customerPaid', 'businessType'];
         
         foreach ($required_fields as $field) {
             if (empty($_POST[$field])) {
@@ -2442,22 +2446,25 @@ $router->post('/add-policy', function() {
         }
         
         // Check if policy document is uploaded
-        if (!isset($_FILES['policy_document']) || $_FILES['policy_document']['error'] !== UPLOAD_ERR_OK) {
+        if (!isset($_FILES['policyDocument']) || $_FILES['policyDocument']['error'] !== UPLOAD_ERR_OK) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Policy document is required']);
             exit;
         }
         
         // Calculate dates
-        $policy_start_date = $_POST['policy_start_date'];
-        $policy_expiry_date = date('Y-m-d', strtotime($policy_start_date . ' +1 year'));
+        $policy_start_date = $_POST['policyStartDate'];
+        $start_date = new DateTime($policy_start_date);
+        $end_date = clone $start_date;
+        $end_date->add(new DateInterval('P1Y'))->sub(new DateInterval('P1D')); // Add 1 year, subtract 1 day
+        $policy_end_date = $end_date->format('Y-m-d');
         
-        // Calculate revenue
+        // Calculate revenue: Customer Paid - (Premium - Payout)
         $premium = floatval($_POST['premium']);
         $payout = floatval($_POST['payout']);
-        $customer_paid = floatval($_POST['customer_paid']);
-        $actual_amount = $premium - $payout;
-        $revenue = $actual_amount - $customer_paid;
+        $customer_paid = floatval($_POST['customerPaid']);
+        $actual_payable = $premium - $payout;
+        $revenue = $customer_paid - $actual_payable;
         
         // Generate policy number
         $policy_number = generatePolicyNumber();
@@ -2469,7 +2476,7 @@ $router->post('/add-policy', function() {
         }
         
         $uploaded_files = [];
-        $file_fields = ['policy_document', 'rc_document', 'aadhar_card', 'pan_card'];
+        $file_fields = ['policyDocument', 'rcDocument', 'aadharCard', 'panCard'];
         
         foreach ($file_fields as $field) {
             if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
@@ -2484,52 +2491,53 @@ $router->post('/add-policy', function() {
         }
         
         // Check if customer exists or create new one
-        $customer = $db->fetch("SELECT id FROM customers WHERE phone = ?", [$_POST['customer_phone']]);
+        $customer = $db->fetch("SELECT id FROM customers WHERE phone = ?", [$_POST['customerPhone']]);
         
         if (!$customer) {
             // Create new customer
-            $customer_id = $db->insert("
+            $db->execute("
                 INSERT INTO customers (name, phone, email, created_at, updated_at) 
                 VALUES (?, ?, ?, NOW(), NOW())
             ", [
-                $_POST['customer_name'],
-                $_POST['customer_phone'],
-                $_POST['customer_email'] ?? null
+                $_POST['customerName'],
+                $_POST['customerPhone'],
+                $_POST['customerEmail'] ?? null
             ]);
+            $customer_id = $db->lastInsertId();
         } else {
             $customer_id = $customer['id'];
         }
         
         // Insert policy
-        $policy_id = $db->insert("
+        $db->execute("
             INSERT INTO policies (
-                policy_number, customer_id, insurance_company_id, policy_type_id,
-                vehicle_number, vehicle_type, premium, policy_start_date, policy_expiry_date,
-                actual_amount, customer_paid, revenue, business_type,
-                policy_document, rc_document, aadhar_card, pan_card,
+                policy_number, customer_id, insurance_company_id, policy_type_id, category,
+                vehicle_number, vehicle_type, premium_amount, policy_start_date, policy_end_date,
+                revenue, business_type, policy_document, rc_document, aadhar_card, pan_card,
                 status, agent_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ", [
             $policy_number,
             $customer_id,
-            $_POST['insurance_company_id'],
+            $_POST['insuranceCompany'],
             1, // Default motor insurance type
-            strtoupper($_POST['vehicle_number']),
-            $_POST['vehicle_type'],
+            $_POST['category'],
+            strtoupper($_POST['vehicleNumber']),
+            $_POST['vehicleType'],
             $premium,
             $policy_start_date,
-            $policy_expiry_date,
-            $actual_amount,
-            $customer_paid,
+            $policy_end_date,
             $revenue,
-            $_POST['business_type'],
-            $uploaded_files['policy_document'] ?? null,
-            $uploaded_files['rc_document'] ?? null,
-            $uploaded_files['aadhar_card'] ?? null,
-            $uploaded_files['pan_card'] ?? null,
+            $_POST['businessType'],
+            $uploaded_files['policyDocument'] ?? null,
+            $uploaded_files['rcDocument'] ?? null,
+            $uploaded_files['aadharCard'] ?? null,
+            $uploaded_files['panCard'] ?? null,
             'active',
             $_SESSION['user_id']
         ]);
+        
+        $policy_id = $db->lastInsertId();
         
         if ($policy_id) {
             header('Content-Type: application/json');
@@ -2553,7 +2561,7 @@ $router->post('/add-policy', function() {
 $router->post('/search-vehicle', function() {
     requireAuth();
     
-    $vehicle_number = strtoupper($_POST['vehicle_number'] ?? '');
+    $vehicle_number = strtoupper($_POST['vehicleNumber'] ?? '');
     
     if (empty($vehicle_number)) {
         header('Content-Type: application/json');

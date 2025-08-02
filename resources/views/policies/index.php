@@ -2,11 +2,6 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">All Policies</h2>
-            <div>
-                <a href="/policies/create" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Add New Policy
-                </a>
-            </div>
         </div>
     </div>
 </div>
