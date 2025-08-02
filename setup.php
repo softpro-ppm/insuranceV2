@@ -134,7 +134,7 @@ if ($agent_result) {
                         <h5>Database Tables Status</h5>
                     </div>
                     <div class="card-body">
-                        <table class="table">
+                        <table class="table no-search">
                             <thead>
                                 <tr>
                                     <th>Table</th>
@@ -168,7 +168,7 @@ if ($agent_result) {
                     </div>
                     <div class="card-body">
                         <?php if (!empty($agent_check)): ?>
-                            <table class="table table-sm">
+                            <table class="table table-sm no-search">
                                 <thead>
                                     <tr>
                                         <th>Name</th>

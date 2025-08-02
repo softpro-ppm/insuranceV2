@@ -1,0 +1,22 @@
+-- Insert Customers Only  
+INSERT INTO customers (id, customer_code, name, email, phone, date_of_birth, gender, address, city, pincode, created_at, updated_at) VALUES
+(1, 'CUST001', 'Amit Patel', 'amit.patel@email.com', '9876543201', '1985-05-15', 'male', '123 MG Road', 'Mumbai', '400001', NOW(), NOW()),
+(2, 'CUST002', 'Sunita Sharma', 'sunita.sharma@email.com', '9876543202', '1990-08-22', 'female', '456 Sector 15', 'Gurgaon', '122001', NOW(), NOW()),
+(3, 'CUST003', 'Rahul Singh', 'rahul.singh@email.com', '9876543203', '1988-12-10', 'male', '789 Civil Lines', 'Delhi', '110001', NOW(), NOW()),
+(4, 'CUST004', 'Meera Gupta', 'meera.gupta@email.com', '9876543204', '1992-03-18', 'female', '321 Park Street', 'Kolkata', '700001', NOW(), NOW()),
+(5, 'CUST005', 'Vikash Kumar', 'vikash.kumar@email.com', '9876543205', '1987-07-25', 'male', '654 Anna Nagar', 'Chennai', '600001', NOW(), NOW()),
+(6, 'CUST006', 'Anjali Reddy', 'anjali.reddy@email.com', '9876543206', '1995-11-08', 'female', '987 Banjara Hills', 'Hyderabad', '500001', NOW(), NOW()),
+(7, 'CUST007', 'Deepak Joshi', 'deepak.joshi@email.com', '9876543207', '1983-01-30', 'male', '147 Koregaon Park', 'Pune', '411001', NOW(), NOW()),
+(8, 'CUST008', 'Kavita Nair', 'kavita.nair@email.com', '9876543208', '1991-09-14', 'female', '258 Marine Drive', 'Mumbai', '400002', NOW(), NOW()),
+(9, 'CUST009', 'Suresh Agarwal', 'suresh.agarwal@email.com', '9876543209', '1986-04-12', 'male', '369 Commercial Street', 'Bangalore', '560001', NOW(), NOW()),
+(10, 'CUST010', 'Pooja Mishra', 'pooja.mishra@email.com', '9876543210', '1993-06-20', 'female', '741 Hazratganj', 'Lucknow', '226001', NOW(), NOW()),
+(11, 'CUST011', 'Manish Agrawal', 'manish.agrawal@email.com', '9876543211', '1989-10-05', 'male', '852 Satellite Road', 'Ahmedabad', '380001', NOW(), NOW()),
+(12, 'CUST012', 'Ritu Saxena', 'ritu.saxena@email.com', '9876543212', '1994-02-28', 'female', '963 Arera Colony', 'Bhopal', '462001', NOW(), NOW()),
+(13, 'CUST013', 'Arjun Kapoor', 'arjun.kapoor@email.com', '9876543213', '1984-12-16', 'male', '159 Model Town', 'Jalandhar', '144001', NOW(), NOW()),
+(14, 'CUST014', 'Neha Gupta', 'neha.gupta@email.com', '9876543214', '1996-08-03', 'female', '357 Rajouri Garden', 'Delhi', '110027', NOW(), NOW()),
+(15, 'CUST015', 'Rohit Verma', 'rohit.verma@email.com', '9876543215', '1990-11-22', 'male', '486 Whitefield', 'Bangalore', '560066', NOW(), NOW()),
+(16, 'CUST016', 'Shreya Iyer', 'shreya.iyer@email.com', '9876543216', '1987-05-09', 'female', '789 Vashi', 'Navi Mumbai', '400703', NOW(), NOW()),
+(17, 'CUST017', 'Ajay Tiwari', 'ajay.tiwari@email.com', '9876543217', '1992-01-15', 'male', '234 Gomti Nagar', 'Lucknow', '226010', NOW(), NOW()),
+(18, 'CUST018', 'Priyanka Das', 'priyanka.das@email.com', '9876543218', '1988-07-11', 'female', '567 Salt Lake', 'Kolkata', '700064', NOW(), NOW()),
+(19, 'CUST019', 'Kiran Rao', 'kiran.rao@email.com', '9876543219', '1985-03-27', 'male', '891 Jubilee Hills', 'Hyderabad', '500033', NOW(), NOW()),
+(20, 'CUST020', 'Divya Jain', 'divya.jain@email.com', '9876543220', '1991-09-18', 'female', '345 Malviya Nagar', 'Jaipur', '302017', NOW(), NOW());

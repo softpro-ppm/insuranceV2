@@ -95,7 +95,7 @@ exit();
             <div class="card-body">
                 <?php if (!empty($recent_policies)): ?>
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover searchable-table">
                             <thead>
                                 <tr>
                                     <th>Policy No</th>

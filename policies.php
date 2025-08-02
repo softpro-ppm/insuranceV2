@@ -224,17 +224,17 @@ exit();
                                         Actions
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="/view-policy?id=<?= $policy['id'] ?>">
+                                        <li><a class="dropdown-item" href="/policies/<?= $policy['id'] ?>/view">
                                             <i class="fas fa-eye me-2"></i>View Details
                                         </a></li>
-                                        <li><a class="dropdown-item" href="/edit?id=<?= $policy['id'] ?>">
+                                        <li><a class="dropdown-item" href="/policies/<?= $policy['id'] ?>/edit">
                                             <i class="fas fa-edit me-2"></i>Edit Policy
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="/renew?id=<?= $policy['id'] ?>">
                                             <i class="fas fa-sync-alt me-2"></i>Renew Policy
                                         </a></li>
-                                        <li><a class="dropdown-item" href="/print-policy?id=<?= $policy['id'] ?>">
+                                        <li><a class="dropdown-item" href="/policies/<?= $policy['id'] ?>/print" target="_blank">
                                             <i class="fas fa-print me-2"></i>Print Policy
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
@@ -270,12 +270,13 @@ exit();
 <script>
 function deletePolicy(policyId) {
     if (confirm('Are you sure you want to delete this policy? This action cannot be undone.')) {
-        fetch('/include/delete-policy.php', {
+        fetch('/policies/' + policyId + '/delete', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
             },
-            body: 'id=' + policyId
+            credentials: 'same-origin'
         })
         .then(response => response.json())
         .then(data => {
@@ -286,7 +287,8 @@ function deletePolicy(policyId) {
             }
         })
         .catch(error => {
-            alert('Error deleting policy');
+            console.error('Error:', error);
+            alert('Error deleting policy. Please try again.');
         });
     }
 }

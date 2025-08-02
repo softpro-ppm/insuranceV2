@@ -135,7 +135,7 @@ class DataTable {
                     color: #adb5bd !important;
                 }
                 </style>
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover searchable-table">
                     <thead class="table-dark">
                         <tr>
                             <th width="50">#</th> <!-- Serial Number Column -->
@@ -347,7 +347,7 @@ function renderDataTable($config) {
         
         <!-- Data Table -->
         <div class="table-responsive">
-            <table class="table table-striped table-hover" id="<?= $table_id ?>">
+            <table class="table table-striped table-hover searchable-table" id="<?= $table_id ?>">
                 <thead class="table-dark">
                     <tr>
                         <th width="50">#</th> <!-- Serial Number Column -->

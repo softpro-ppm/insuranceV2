@@ -10,18 +10,18 @@
 </div>
 
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <form id="policyForm" method="POST" action="/policies/store" enctype="multipart/form-data">
-                    <!-- Step 1: Policy Type Selection -->
-                    <div class="step" id="step1">
-                        <h5 class="card-title mb-4">
-                            <i class="fas fa-list text-primary me-2"></i>
-                            Step 1: Select Insurance Type
-                        </h5>
-                        
-                        <div class="row">
+    <div class="col-lg-8 mx-auto">
+        <form id="policyForm" method="POST" enctype="multipart/form-data">
+            
+            <!-- Step 1: Select Insurance Type -->
+            <div class="card mb-4 step" id="step1">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-clipboard-list text-primary me-2"></i>
+                        Step 1: Select Insurance Type
+                    </h5>
+
+                    <div class="row">
                             <div class="col-md-4 mb-3">
                                 <div class="policy-type-card h-100" data-category="motor">
                                     <div class="card h-100 border-2 policy-type-option">
@@ -83,9 +83,11 @@
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Step 2: Customer Information -->
-                    <div class="step d-none" id="step2">
+                </div>
+                
+                <!-- Step 2: Customer Information -->
+                <div class="card mb-4 step d-none" id="step2">
+                    <div class="card-body">
                         <h5 class="card-title mb-4">
                             <i class="fas fa-user text-primary me-2"></i>
                             Step 2: Customer Information
@@ -113,7 +115,7 @@
                             <div class="row mb-3">
                                 <div class="col-12">
                                     <label class="form-label">Select Customer <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="customer_id" name="customer_id" style="width: 100%;">
+                                    <select class="form-control select2" id="customer_id" name="customer_id" style="width: 100%;">
                                         <option value="">Search and select customer...</option>
                                     </select>
                                     <small class="form-text text-muted">Type customer name, phone number, or email to search</small>
@@ -177,9 +179,11 @@
                             </button>
                         </div>
                     </div>
+                </div>
                     
-                    <!-- Step 3: Policy Details (Dynamic based on insurance type) -->
-                    <div class="step d-none" id="step3">
+                <!-- Step 3: Policy Details (Dynamic based on insurance type) -->
+                <div class="card mb-4 step d-none" id="step3">
+                    <div class="card-body">
                         <h5 class="card-title mb-4">
                             <i class="fas fa-file-contract text-primary me-2"></i>
                             Step 3: Policy Details
@@ -230,11 +234,19 @@
                         <!-- Motor Insurance Specific Fields -->
                         <div id="motorFields" class="insurance-specific-fields d-none">
                             <h6 class="text-primary mb-3"><i class="fas fa-car me-2"></i>Vehicle Details</h6>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+                            
+                            <!-- Vehicle Number Field (First in Motor Insurance) -->
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <label class="form-label">Vehicle Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control text-uppercase" name="vehicle_number" placeholder="MH12AB1234">
+                                    <input type="text" class="form-control text-uppercase" name="vehicle_number" id="vehicle_number" 
+                                           placeholder="Enter vehicle number (e.g., MH12AB1234)" required>
+                                    <small class="form-text text-muted">Enter vehicle number to check for existing policies</small>
+                                    <div id="vehicleCheckResult" class="mt-2"></div>
                                 </div>
+                            </div>
+                            
+                            <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Vehicle Type <span class="text-danger">*</span></label>
                                     <select class="form-control" name="vehicle_type">
@@ -309,9 +321,11 @@
                             </button>
                         </div>
                     </div>
+                </div>
                     
-                    <!-- Step 4: Additional Information -->
-                    <div class="step d-none" id="step4">
+                <!-- Step 4: Additional Information -->
+                <div class="card mb-4 step d-none" id="step4">
+                    <div class="card-body">
                         <h5 class="card-title mb-4">
                             <i class="fas fa-clipboard-check text-primary me-2"></i>
                             Step 4: Additional Information
@@ -471,8 +485,8 @@
                             </button>
                         </div>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -493,6 +507,21 @@
 .policy-type-option.selected {
     border-color: #007bff !important;
     background-color: #f8f9ff;
+    box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+    transform: translateY(-2px);
+}
+
+.policy-type-option.selected .card-body {
+    background-color: #f8f9ff;
+}
+
+.policy-type-option.selected h5 {
+    color: #007bff;
+}
+
+.policy-type-option.selected .form-check-label {
+    color: #007bff;
+    font-weight: bold;
 }
 
 .insurance-specific-fields {
@@ -505,14 +534,568 @@
     animation: fadeIn 0.3s ease-in-out;
 }
 
+#vehicleCheckCard {
+    border-left: 4px solid #007bff;
+}
+
+.policy-summary p {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.vehicle-check-input {
+    font-family: monospace;
+    font-weight: bold;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Fix Select2 dropdown z-index to appear above sidebar */
+.select2-container {
+    z-index: 9999 !important;
+}
+
+.select2-dropdown {
+    z-index: 9999 !important;
+}
+
+.select2-container--open .select2-dropdown {
+    z-index: 9999 !important;
+}
+
+/* Ensure Select2 search input is visible */
+.select2-search__field {
+    z-index: 10000 !important;
+}
+
+/* Fix Select2 results container */
+.select2-results {
+    z-index: 10000 !important;
+}
+
+/* Ensure the dropdown is always on top */
+.select2-container--open {
+    z-index: 9999 !important;
+}
+
+/* Fix dropdown positioning relative to its container */
+.select2-container .select2-dropdown {
+    position: absolute !important;
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Vehicle Number Check for Motor Insurance Only
+    let currentPolicyData = null;
+    let isRenewal = false;
+    let vehicleCheckPerformed = false;
+    
+    // Vehicle number input validation (only for motor insurance)
+    document.addEventListener('blur', function(e) {
+        if (e.target.id === 'vehicle_number' && e.target.value.trim()) {
+            const selectedCategory = document.querySelector('input[name="insurance_category"]:checked')?.value;
+            if (selectedCategory === 'motor' && !vehicleCheckPerformed) {
+                checkVehicleNumber(e.target.value.trim().toUpperCase());
+            }
+        }
+    }, true);
+    
+    // Check vehicle number for existing policies
+    async function checkVehicleNumber(vehicleNumber) {
+        if (vehicleNumber.length < 6) {
+            return;
+        }
+        
+        const resultDiv = document.getElementById('vehicleCheckResult');
+        resultDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Checking for existing policies...';
+        
+        try {
+            const response = await fetch(`/api/check-vehicle?vehicle_number=${encodeURIComponent(vehicleNumber)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            vehicleCheckPerformed = true;
+            
+            if (result.exists) {
+                currentPolicyData = result.policy;
+                showRenewalDialog(result);
+            } else {
+                showNewPolicyMessage();
+            }
+            
+        } catch (error) {
+            console.error('Error checking vehicle:', error);
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error checking vehicle: ${error.message}
+                </div>
+            `;
+        }
+    }
+    
+    // Show renewal dialog
+    function showRenewalDialog(result) {
+        const resultDiv = document.getElementById('vehicleCheckResult');
+        const policy = result.policy;
+        
+        const statusBadge = policy.status === 'active' ? 
+            '<span class="badge bg-success">Active</span>' : 
+            result.is_expired ? '<span class="badge bg-danger">Expired</span>' : 
+            '<span class="badge bg-warning">Expiring Soon</span>';
+        
+        const renewalMessage = result.is_expired ? 
+            'This policy has expired. Would you like to renew it?' :
+            `This policy expires in ${result.days_to_expiry} days. Would you like to renew it?`;
+        
+        resultDiv.innerHTML = `
+            <div class="alert alert-warning mt-3">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Existing Policy Found!</h6>
+                        <div class="policy-summary">
+                            <p><strong>Policy Number:</strong> ${policy.policy_number} ${statusBadge}</p>
+                            <p><strong>Customer:</strong> ${policy.customer_name} (${policy.customer_phone})</p>
+                            <p><strong>Company:</strong> ${policy.insurance_company_name}</p>
+                            <p><strong>Policy Period:</strong> ${new Date(policy.policy_start_date).toLocaleDateString()} - ${new Date(policy.policy_end_date).toLocaleDateString()}</p>
+                            <p><strong>Premium:</strong> ₹${parseFloat(policy.premium_amount).toLocaleString()}</p>
+                        </div>
+                        <p class="mb-2"><strong>${renewalMessage}</strong></p>
+                    </div>
+                    <div class="col-md-4 d-flex flex-column gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="startRenewal()">
+                            <i class="fas fa-sync-alt me-2"></i>Yes, Renew Policy
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="continueNewPolicy()">
+                            <i class="fas fa-plus me-2"></i>Create New Policy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Show new policy message
+    function showNewPolicyMessage() {
+        const resultDiv = document.getElementById('vehicleCheckResult');
+        resultDiv.innerHTML = `
+            <div class="alert alert-success mt-3">
+                <i class="fas fa-check-circle me-2"></i>
+                No existing policy found for this vehicle. Continue with new policy creation.
+            </div>
+        `;
+        isRenewal = false;
+        currentPolicyData = null;
+    }
+    
+    // Start renewal process
+    window.startRenewal = function() {
+        if (!currentPolicyData) return;
+        
+        isRenewal = true;
+        
+        // Populate form with existing data
+        populateRenewalData();
+        
+        // Show renewal banner
+        showRenewalBanner();
+        
+        // Update submit button
+        updateSubmitButton();
+        
+        // Hide the renewal dialog
+        document.getElementById('vehicleCheckResult').innerHTML = `
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-sync-alt me-2"></i>
+                Renewing policy <strong>${currentPolicyData.policy_number}</strong> for vehicle <strong>${currentPolicyData.vehicle_number}</strong>
+            </div>
+        `;
+    };
+    
+    // Continue with new policy
+    window.continueNewPolicy = function() {
+        isRenewal = false;
+        currentPolicyData = null;
+        showNewPolicyMessage();
+    };
+    
+    // Populate form with renewal data
+    function populateRenewalData() {
+        if (!currentPolicyData) return;
+        
+        const policy = currentPolicyData;
+        
+        // Set dates for renewal (start from today, end date 1 year from today)
+        const today = new Date();
+        const nextYear = new Date(today);
+        nextYear.setFullYear(today.getFullYear() + 1);
+        
+        setTimeout(() => {
+            // Vehicle details
+            if (policy.vehicle_type) {
+                const vehicleTypeSelect = document.querySelector('select[name="vehicle_type"]');
+                if (vehicleTypeSelect) {
+                    vehicleTypeSelect.value = policy.vehicle_type;
+                }
+            }
+            
+            // Policy dates
+            const startDateField = document.getElementById('policyStartDate');
+            const endDateField = document.getElementById('policyEndDate');
+            if (startDateField) startDateField.value = today.toISOString().split('T')[0];
+            if (endDateField) endDateField.value = nextYear.toISOString().split('T')[0];
+            
+            // Premium (keep same or allow editing)
+            const premiumField = document.querySelector('input[name="premium_amount"]');
+            if (premiumField && policy.premium_amount) {
+                premiumField.value = policy.premium_amount;
+            }
+            
+            // Sum assured
+            const sumAssuredField = document.querySelector('input[name="sum_assured"]');
+            if (sumAssuredField && policy.sum_assured) {
+                sumAssuredField.value = policy.sum_assured;
+            }
+            
+            // Commission percentage
+            const commissionField = document.querySelector('input[name="commission_percentage"]');
+            if (commissionField && policy.commission_percentage) {
+                commissionField.value = policy.commission_percentage;
+            }
+            
+            // Coverage type
+            if (policy.coverage_type) {
+                const coverageSelect = document.querySelector('select[name="coverage_type"]');
+                if (coverageSelect) {
+                    coverageSelect.value = policy.coverage_type;
+                }
+            }
+            
+            // Plan name
+            if (policy.plan_name) {
+                const planNameField = document.querySelector('input[name="plan_name"]');
+                if (planNameField) {
+                    planNameField.value = policy.plan_name;
+                }
+            }
+            
+            // Pre-select insurance company and agent
+            setTimeout(() => {
+                if (policy.insurance_company_id) {
+                    const companySelect = document.getElementById('insuranceCompany');
+                    if (companySelect) {
+                        companySelect.value = policy.insurance_company_id;
+                        $(companySelect).trigger('change');
+                    }
+                }
+                
+                if (policy.agent_id) {
+                    const agentSelect = document.getElementById('agentSelect');
+                    if (agentSelect) {
+                        agentSelect.value = policy.agent_id;
+                        $(agentSelect).trigger('change');
+                    }
+                }
+            }, 1000);
+            
+        }, 500);
+    }
+    
+    // Show renewal banner
+    function showRenewalBanner() {
+        // Remove existing banner if any
+        const existingBanner = document.querySelector('.renewal-banner');
+        if (existingBanner) existingBanner.remove();
+        
+        const banner = document.createElement('div');
+        banner.className = 'alert alert-info mb-4 renewal-banner';
+        banner.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-sync-alt fa-2x me-3 text-primary"></i>
+                <div>
+                    <h5 class="mb-1">Policy Renewal Mode</h5>
+                    <p class="mb-0">You are renewing policy <strong>${currentPolicyData.policy_number}</strong> for vehicle <strong>${currentPolicyData.vehicle_number}</strong></p>
+                </div>
+            </div>
+        `;
+        
+        const step3 = document.getElementById('step3');
+        if (step3) {
+            step3.insertBefore(banner, step3.firstChild.nextSibling);
+        }
+    }
+
+    // Step navigation functions
+    function showStep1() {
+        hideAllSteps();
+        const step1 = document.getElementById('step1');
+        if (step1) {
+            step1.style.display = 'block';
+            step1.classList.remove('d-none');
+            updateProgressBar(1);
+        } else {
+            console.error('Step 1 element not found');
+        }
+    }
+
+    // Show step based on insurance category
+    function showInsuranceStep(category) {
+        hideAllSteps();
+        
+        // Show step 2 (customer information)
+        document.getElementById('step2').style.display = 'block';
+        updateProgressBar(2);
+        
+        // Store selected category for step 3
+        sessionStorage.setItem('selectedInsuranceCategory', category);
+    }
+
+    function showStep3() {
+        hideAllSteps();
+        const step3 = document.getElementById('step3');
+        if (step3) {
+            step3.style.display = 'block';
+            step3.classList.remove('d-none');
+            updateProgressBar(3);
+        }
+        
+        // Show specific fields based on selected category
+        const selectedCategory = sessionStorage.getItem('selectedInsuranceCategory');
+        showInsuranceFields(selectedCategory);
+    }
+
+    function showStep4() {
+        hideAllSteps();
+        const step4 = document.getElementById('step4');
+        if (step4) {
+            step4.style.display = 'block';
+            step4.classList.remove('d-none');
+            updateProgressBar(4);
+        }
+    }
+
+    function hideAllSteps() {
+        const steps = document.querySelectorAll('.step');
+        steps.forEach(step => {
+            step.style.display = 'none';
+            step.classList.add('d-none');
+        });
+    }
+
+    function showInsuranceFields(category) {
+        // Hide all insurance-specific fields first
+        document.querySelectorAll('.insurance-specific-fields').forEach(field => {
+            field.classList.add('d-none');
+        });
+        
+        // Show specific fields based on category
+        if (category === 'motor') {
+            document.getElementById('motorFields').classList.remove('d-none');
+        } else if (category === 'health') {
+            document.getElementById('healthFields').classList.remove('d-none');
+        } else if (category === 'life') {
+            document.getElementById('lifeFields').classList.remove('d-none');
+        }
+    }
+
+    function updateProgressBar(currentStep) {
+        const progressBar = document.querySelector('.progress-bar');
+        if (progressBar) {
+            const percentage = (currentStep / 4) * 100;
+            progressBar.style.width = percentage + '%';
+            progressBar.setAttribute('aria-valuenow', percentage);
+        }
+        
+        // Update step indicators if they exist
+        for (let i = 1; i <= 4; i++) {
+            const stepIndicator = document.querySelector(`.step-indicator[data-step="${i}"]`);
+            if (stepIndicator) {
+                if (i < currentStep) {
+                    stepIndicator.className = 'step-indicator completed';
+                } else if (i === currentStep) {
+                    stepIndicator.className = 'step-indicator active';
+                } else {
+                    stepIndicator.className = 'step-indicator';
+                }
+            }
+        }
+    }
+
+    // Update submit button for renewal
+    function updateSubmitButton() {
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn && isRenewal) {
+            submitBtn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Renew Policy';
+            submitBtn.className = 'btn btn-success btn-lg';
+        }
+    }
+
+    // Insurance category change handler
+    document.addEventListener('change', function(e) {
+        if (e.target.name === 'insurance_category') {
+            // Enable the Next Step button
+            const nextBtn = document.getElementById('nextStep1');
+            if (nextBtn) {
+                nextBtn.disabled = false;
+                nextBtn.classList.add('btn-primary');
+                nextBtn.classList.remove('btn-secondary');
+            }
+            
+            // Add visual feedback to selected card
+            document.querySelectorAll('.policy-type-option').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const selectedCard = e.target.closest('.policy-type-card').querySelector('.policy-type-option');
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+            }
+            
+            // Store the selected category
+            sessionStorage.setItem('selectedInsuranceCategory', e.target.value);
+        }
+    });
+
+    // Make policy type cards clickable
+    document.addEventListener('click', function(e) {
+        // Handle clicking on policy type cards
+        if (e.target.closest('.policy-type-card')) {
+            const card = e.target.closest('.policy-type-card');
+            const category = card.getAttribute('data-category');
+            const radioButton = document.getElementById(category);
+            
+            if (radioButton && !radioButton.checked) {
+                radioButton.checked = true;
+                
+                // Trigger change event
+                const changeEvent = new Event('change', { bubbles: true });
+                radioButton.dispatchEvent(changeEvent);
+            }
+            return;
+        }
+        
+        // Handle Next Step button for Step 1
+        if (e.target.id === 'nextStep1') {
+            const selectedCategory = document.querySelector('input[name="insurance_category"]:checked');
+            if (selectedCategory) {
+                showStep2(); // Go directly to step 2 (customer information)
+            } else {
+                alert('Please select an insurance category');
+            }
+        }
+        
+        if (e.target.classList.contains('btn-next')) {
+            const currentStep = e.target.closest('.step').id;
+            
+            if (currentStep === 'step1') {
+                const selectedCategory = document.querySelector('input[name="insurance_category"]:checked');
+                if (selectedCategory) {
+                    showInsuranceStep(selectedCategory.value);
+                } else {
+                    alert('Please select an insurance category');
+                }
+            } else if (currentStep === 'step2') {
+                showStep3();
+            } else if (currentStep === 'step3') {
+                showStep4();
+            }
+        }
+        
+        // Handle Previous buttons
+        if (e.target.classList.contains('btn-prev')) {
+            const currentStep = e.target.closest('.step').id;
+            
+            if (currentStep === 'step4') {
+                showStep3();
+            } else if (currentStep === 'step3') {
+                showStep2();
+            } else if (currentStep === 'step2') {
+                showStep1();
+            }
+        }
+        
+        // Handle specific step navigation buttons
+        if (e.target.id === 'nextStep2') {
+            // Validate customer selection before proceeding
+            const customerOption = document.querySelector('input[name="customer_option"]:checked')?.value;
+            
+            if (customerOption === 'existing') {
+                const customerSelect = document.getElementById('customer_id');
+                if (!customerSelect.value) {
+                    alert('Please select a customer from the dropdown');
+                    return;
+                }
+            } else {
+                const customerName = document.querySelector('input[name="customer_name"]').value;
+                const customerPhone = document.querySelector('input[name="customer_phone"]').value;
+                const customerEmail = document.querySelector('input[name="customer_email"]').value;
+                
+                if (!customerName || !customerPhone || !customerEmail) {
+                    alert('Please fill in all required customer information');
+                    return;
+                }
+            }
+            
+            showStep3();
+        }
+        if (e.target.id === 'prevStep2') {
+            showStep1();
+        }
+        if (e.target.id === 'nextStep3') {
+            showStep4();
+        }
+        if (e.target.id === 'prevStep3') {
+            showStep2();
+        }
+    });
+    
+    // Helper function for step 2
+    function showStep2() {
+        hideAllSteps();
+        const step2 = document.getElementById('step2');
+        if (step2) {
+            step2.style.display = 'block';
+            step2.classList.remove('d-none');
+            updateProgressBar(2);
+        } else {
+            console.error('Step 2 element not found');
+        }
+    }
+
+    // Form submission handler
+    document.getElementById('policyForm').addEventListener('submit', function(e) {
+        if (isRenewal && currentPolicyData) {
+            // Add renewal flag and original policy ID to form data
+            const renewalInput = document.createElement('input');
+            renewalInput.type = 'hidden';
+            renewalInput.name = 'is_renewal';
+            renewalInput.value = '1';
+            this.appendChild(renewalInput);
+            
+            const originalPolicyInput = document.createElement('input');
+            originalPolicyInput.type = 'hidden';
+            originalPolicyInput.name = 'original_policy_id';
+            originalPolicyInput.value = currentPolicyData.id;
+            this.appendChild(originalPolicyInput);
+        }
+    });
+
+    // Initialize form
+    showStep1();
+
     // Step navigation
     let currentStep = 1;
     
@@ -553,16 +1136,65 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const select = document.getElementById('customer_id');
-            select.innerHTML = '<option value="">Select Customer</option>';
+            select.innerHTML = '<option value="">Search and select customer...</option>';
             
             const customersList = Array.isArray(customers) ? customers : (customers.data || []);
             customersList.forEach(customer => {
                 select.innerHTML += `<option value="${customer.id}">${customer.customer_code} - ${customer.name} (${customer.phone})</option>`;
             });
+            
+            // Reinitialize Select2 after loading options
+            if (window.jQuery && window.jQuery.fn.select2) {
+                const $select = $(select);
+                // Destroy existing Select2 if present
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+                // Initialize Select2 with search
+                $select.select2({
+                    placeholder: 'Search and select customer...',
+                    allowClear: true,
+                    width: '100%',
+                    minimumResultsForSearch: 0,
+                    dropdownAutoWidth: true,
+                    escapeMarkup: function(markup) {
+                        return markup;
+                    }
+                });
+                
+                // Add event listener for customer selection
+                $select.on('select2:select', function(e) {
+                    const selectedData = e.params.data;
+                    console.log('Customer selected:', selectedData);
+                });
+                
+                $select.on('select2:clear', function(e) {
+                    console.log('Customer selection cleared');
+                });
+            }
         } catch (error) {
             console.error('Error loading customers:', error);
             const select = document.getElementById('customer_id');
             select.innerHTML = '<option value="">Error loading customers</option>';
+            
+            // Reinitialize Select2 even in error case
+            if (window.jQuery && window.jQuery.fn.select2) {
+                const $select = $(select);
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+                $select.select2({
+                    placeholder: 'Error loading customers',
+                    allowClear: true,
+                    width: '100%',
+                    minimumResultsForSearch: 0,
+                    dropdownAutoWidth: true,
+                    escapeMarkup: function(markup) {
+                        return markup;
+                    }
+                });
+            }
+            
             alert('Error loading customers. Please refresh the page.');
         }
     }
@@ -576,17 +1208,64 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.value === 'existing') {
                 existingSection.classList.remove('d-none');
                 newSection.classList.add('d-none');
-                // Make customer_id required and customer_name not required
-                document.getElementById('customer_id').required = true;
-                document.querySelector('input[name="customer_name"]').required = false;
-                document.querySelector('input[name="customer_phone"]').required = false;
+                
+                // Make customer_id required and customer fields not required
+                const customerSelect = document.getElementById('customer_id');
+                if (customerSelect) {
+                    customerSelect.required = true;
+                }
+                
+                // Make new customer fields not required
+                const customerNameField = document.querySelector('input[name="customer_name"]');
+                const customerPhoneField = document.querySelector('input[name="customer_phone"]');
+                const customerEmailField = document.querySelector('input[name="customer_email"]');
+                const customerDobField = document.querySelector('input[name="customer_dob"]');
+                const customerGenderField = document.querySelector('select[name="customer_gender"]');
+                const customerOccupationField = document.querySelector('input[name="customer_occupation"]');
+                const customerAddressField = document.querySelector('textarea[name="customer_address"]');
+                const customerCityField = document.querySelector('input[name="customer_city"]');
+                const customerPincodeField = document.querySelector('input[name="customer_pincode"]');
+                
+                if (customerNameField) customerNameField.required = false;
+                if (customerPhoneField) customerPhoneField.required = false;
+                if (customerEmailField) customerEmailField.required = false;
+                if (customerDobField) customerDobField.required = false;
+                if (customerGenderField) customerGenderField.required = false;
+                if (customerOccupationField) customerOccupationField.required = false;
+                if (customerAddressField) customerAddressField.required = false;
+                if (customerCityField) customerCityField.required = false;
+                if (customerPincodeField) customerPincodeField.required = false;
+                
             } else {
                 existingSection.classList.add('d-none');
                 newSection.classList.remove('d-none');
-                // Make customer fields required and customer_id not required
-                document.getElementById('customer_id').required = false;
-                document.querySelector('input[name="customer_name"]').required = true;
-                document.querySelector('input[name="customer_phone"]').required = true;
+                
+                // Make customer_id not required
+                const customerSelect = document.getElementById('customer_id');
+                if (customerSelect) {
+                    customerSelect.required = false;
+                }
+                
+                // Make new customer fields required
+                const customerNameField = document.querySelector('input[name="customer_name"]');
+                const customerPhoneField = document.querySelector('input[name="customer_phone"]');
+                const customerEmailField = document.querySelector('input[name="customer_email"]');
+                const customerDobField = document.querySelector('input[name="customer_dob"]');
+                const customerGenderField = document.querySelector('select[name="customer_gender"]');
+                const customerOccupationField = document.querySelector('input[name="customer_occupation"]');
+                const customerAddressField = document.querySelector('textarea[name="customer_address"]');
+                const customerCityField = document.querySelector('input[name="customer_city"]');
+                const customerPincodeField = document.querySelector('input[name="customer_pincode"]');
+                
+                if (customerNameField) customerNameField.required = true;
+                if (customerPhoneField) customerPhoneField.required = true;
+                if (customerEmailField) customerEmailField.required = true;
+                if (customerDobField) customerDobField.required = true;
+                if (customerGenderField) customerGenderField.required = true;
+                if (customerOccupationField) customerOccupationField.required = true;
+                if (customerAddressField) customerAddressField.required = true;
+                if (customerCityField) customerCityField.required = true;
+                if (customerPincodeField) customerPincodeField.required = true;
             }
         });
     });
@@ -887,9 +1566,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Form validation
     document.getElementById('policyForm').addEventListener('submit', function(e) {
+        // Add renewal data if this is a renewal
+        if (isRenewal && currentPolicyData) {
+            // Add hidden fields for renewal
+            const renewalInput = document.createElement('input');
+            renewalInput.type = 'hidden';
+            renewalInput.name = 'is_renewal';
+            renewalInput.value = '1';
+            this.appendChild(renewalInput);
+            
+            const originalPolicyInput = document.createElement('input');
+            originalPolicyInput.type = 'hidden';
+            originalPolicyInput.name = 'original_policy_id';
+            originalPolicyInput.value = currentPolicyData.id;
+            this.appendChild(originalPolicyInput);
+            
+            const originalPolicyNumberInput = document.createElement('input');
+            originalPolicyNumberInput.type = 'hidden';
+            originalPolicyNumberInput.name = 'original_policy_number';
+            originalPolicyNumberInput.value = currentPolicyData.policy_number;
+            this.appendChild(originalPolicyNumberInput);
+        }
+        
         // Add any additional validation here
         const submitBtn = document.getElementById('submitPolicy');
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Policy...';
+        submitBtn.innerHTML = isRenewal ? 
+            '<i class="fas fa-spinner fa-spin me-2"></i>Renewing Policy...' : 
+            '<i class="fas fa-spinner fa-spin me-2"></i>Creating Policy...';
         submitBtn.disabled = true;
     });
     
@@ -898,10 +1601,32 @@ document.addEventListener('DOMContentLoaded', function() {
         this.value = this.value.replace(/\D/g, '');
     });
     
-    // Vehicle number formatting
-    document.querySelector('input[name="vehicle_number"]').addEventListener('input', function() {
+    // Vehicle number formatting for both fields
+    document.getElementById('vehicle_number_check').addEventListener('input', function() {
         this.value = this.value.toUpperCase();
     });
+    
+    const vehicleDisplayField = document.getElementById('vehicle_number_display');
+    if (vehicleDisplayField) {
+        vehicleDisplayField.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    
+    // Update submit button text based on renewal status
+    function updateSubmitButton() {
+        const submitBtn = document.getElementById('submitPolicy');
+        if (isRenewal) {
+            submitBtn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Renew Policy';
+            submitBtn.className = 'btn btn-warning';
+        } else {
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Create Policy';
+            submitBtn.className = 'btn btn-success';
+        }
+    }
+    
+    // Call this when renewal status changes
+    window.updateSubmitButton = updateSubmitButton;
 });
 </script>
 
@@ -911,13 +1636,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 $(document).ready(function() {
-    // Initialize Select2 for searchable dropdowns
-    $('.select2').select2({
+    // Initialize Select2 for searchable dropdowns (except customer dropdown which has special handling)
+    $('.select2:not(#customer_id)').select2({
         placeholder: function() {
-            return $(this).data('placeholder');
+            return $(this).data('placeholder') || 'Search and select...';
         },
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        minimumResultsForSearch: 0
     });
+    
+    // Initialize customer dropdown specifically (if not already initialized)
+    const customerSelect = $('#customer_id');
+    if (customerSelect.length && !customerSelect.hasClass('select2-hidden-accessible')) {
+        customerSelect.select2({
+            placeholder: 'Search and select customer...',
+            allowClear: true,
+            width: '100%',
+            minimumResultsForSearch: 0,
+            dropdownAutoWidth: true,
+            escapeMarkup: function(markup) {
+                return markup;
+            }
+        });
+    }
 });
 </script>

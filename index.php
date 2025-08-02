@@ -103,12 +103,22 @@ function view($template, $data = []) {
     }
 }
 
+// Generate unique policy number
+function generatePolicyNumber() {
+    $prefix = 'POL';
+    $year = date('Y');
+    $month = date('m');
+    $random = str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+    return $prefix . $year . $month . $random;
+}
+
 // Initialize router
 $router = new Router();
 
 // Public routes
 $router->get('/', function() {
     header('Location: /login');
+    exit;
 });
 
 $router->get('/login', function() {
@@ -726,6 +736,352 @@ $router->post('/policies/store', function() {
         header('Location: /policies/create');
         exit;
     }
+});
+
+// Policy view route
+$router->get('/policies/{id}/view', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $user_role = $_SESSION['user_role'];
+    $user_id = $_SESSION['user_id'];
+    
+    // Get policy with related data
+    $policy = $db->fetch("
+        SELECT p.*, 
+               c.name as customer_name, c.phone as customer_phone, c.email as customer_email,
+               c.address as customer_address, c.city as customer_city, c.state as customer_state,
+               c.pincode as customer_pincode, c.date_of_birth as customer_dob,
+               ic.name as company_name, ic.code as company_code,
+               pt.name as policy_type_name,
+               u.name as agent_name
+        FROM policies p 
+        LEFT JOIN customers c ON p.customer_id = c.id 
+        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id
+        LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
+        LEFT JOIN users u ON p.agent_id = u.id
+        WHERE p.id = ?
+    ", [$id]);
+    
+    if (!$policy) {
+        $_SESSION['error'] = 'Policy not found';
+        header('Location: /policies');
+        exit;
+    }
+    
+    // Role-based access control
+    if ($user_role === 'agent' && $policy['agent_id'] != $user_id) {
+        $_SESSION['error'] = 'Access denied';
+        header('Location: /policies');
+        exit;
+    }
+    
+    view('policies/view', [
+        'title' => 'Policy Details - ' . $policy['policy_number'],
+        'current_page' => 'policies',
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Policies', 'url' => '/policies'],
+            ['title' => 'View Policy', 'url' => '/policies/' . $id . '/view']
+        ],
+        'policy' => $policy
+    ]);
+});
+
+// Policy edit route
+$router->get('/policies/{id}/edit', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $user_role = $_SESSION['user_role'];
+    $user_id = $_SESSION['user_id'];
+    
+    // Get policy with related data
+    $policy = $db->fetch("
+        SELECT p.* 
+        FROM policies p 
+        WHERE p.id = ?
+    ", [$id]);
+    
+    if (!$policy) {
+        $_SESSION['error'] = 'Policy not found';
+        header('Location: /policies');
+        exit;
+    }
+    
+    // Role-based access control
+    if ($user_role === 'agent' && $policy['agent_id'] != $user_id) {
+        $_SESSION['error'] = 'Access denied';
+        header('Location: /policies');
+        exit;
+    }
+    
+    // Get form data
+    $insurance_companies = $db->fetchAll("SELECT * FROM insurance_companies WHERE status = 'active' ORDER BY name");
+    $policy_types = $db->fetchAll("SELECT * FROM policy_types WHERE status = 'active' ORDER BY category, name");
+    
+    // Load agents for assignment
+    $agents = [];
+    if ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'receptionist') {
+        $agents = $db->fetchAll("SELECT id, name, username FROM users WHERE role = 'agent' AND status = 'active' ORDER BY name");
+    } elseif ($_SESSION['user_role'] === 'agent') {
+        $agents = $db->fetchAll("SELECT id, name, username FROM users WHERE id = ? AND status = 'active'", [$_SESSION['user_id']]);
+    }
+    
+    view('policies/edit', [
+        'title' => 'Edit Policy - ' . $policy['policy_number'],
+        'current_page' => 'policies',
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Policies', 'url' => '/policies'],
+            ['title' => 'Edit Policy', 'url' => '/policies/' . $id . '/edit']
+        ],
+        'policy' => $policy,
+        'insurance_companies' => $insurance_companies,
+        'policy_types' => $policy_types,
+        'agents' => $agents
+    ]);
+});
+
+// Policy update route
+$router->post('/policies/{id}/edit', function($id) {
+    requireAuth();
+    
+    try {
+        $db = Database::getInstance();
+        $user_role = $_SESSION['user_role'];
+        $user_id = $_SESSION['user_id'];
+        
+        // Get existing policy
+        $policy = $db->fetch("SELECT * FROM policies WHERE id = ?", [$id]);
+        
+        if (!$policy) {
+            $_SESSION['error'] = 'Policy not found';
+            header('Location: /policies');
+            exit;
+        }
+        
+        // Role-based access control
+        if ($user_role === 'agent' && $policy['agent_id'] != $user_id) {
+            $_SESSION['error'] = 'Access denied';
+            header('Location: /policies');
+            exit;
+        }
+        
+        // Get form data
+        $insurance_company_id = $_POST['insurance_company_id'] ?? $policy['insurance_company_id'];
+        $policy_type_id = $_POST['policy_type_id'] ?? $policy['policy_type_id'];
+        $policy_start_date = $_POST['policy_start_date'] ?? $policy['policy_start_date'];
+        $policy_end_date = $_POST['policy_end_date'] ?? $policy['policy_end_date'];
+        $premium_amount = $_POST['premium_amount'] ?? $policy['premium_amount'];
+        $sum_insured = $_POST['sum_insured'] ?? $policy['sum_insured'];
+        $status = $_POST['status'] ?? $policy['status'];
+        
+        // Prepare update data
+        $data = [
+            'insurance_company_id' => $insurance_company_id,
+            'policy_type_id' => $policy_type_id,
+            'policy_start_date' => $policy_start_date,
+            'policy_end_date' => $policy_end_date,
+            'premium_amount' => $premium_amount,
+            'sum_insured' => $sum_insured,
+            'status' => $status
+        ];
+        
+        // Add category-specific fields
+        $category = $policy['category'];
+        if ($category === 'motor') {
+            $data['vehicle_number'] = $_POST['vehicle_number'] ?? $policy['vehicle_number'];
+            $data['vehicle_type'] = $_POST['vehicle_type'] ?? $policy['vehicle_type'];
+            $data['vehicle_make'] = $_POST['vehicle_make'] ?? $policy['vehicle_make'];
+            $data['vehicle_model'] = $_POST['vehicle_model'] ?? $policy['vehicle_model'];
+            $data['vehicle_year'] = $_POST['vehicle_year'] ?? $policy['vehicle_year'];
+        } elseif ($category === 'health') {
+            $data['plan_name'] = $_POST['plan_name'] ?? $policy['plan_name'];
+            $data['coverage_type'] = $_POST['coverage_type'] ?? $policy['coverage_type'];
+            $data['room_rent_limit'] = $_POST['room_rent_limit'] ?? $policy['room_rent_limit'];
+        } elseif ($category === 'life') {
+            $data['policy_term'] = $_POST['policy_term'] ?? $policy['policy_term'];
+            $data['premium_payment_term'] = $_POST['premium_payment_term'] ?? $policy['premium_payment_term'];
+            $data['maturity_amount'] = $_POST['maturity_amount'] ?? $policy['maturity_amount'];
+        }
+        
+        // Calculate commission
+        $commission_percentage = $_POST['commission_percentage'] ?? $policy['commission_percentage'];
+        $data['commission_percentage'] = $commission_percentage;
+        $data['commission_amount'] = ($premium_amount * $commission_percentage) / 100;
+        
+        // Build update query
+        $setParts = [];
+        foreach ($data as $key => $value) {
+            $setParts[] = "$key = :$key";
+        }
+        $setClause = implode(', ', $setParts);
+        
+        $sql = "UPDATE policies SET $setClause WHERE id = :id";
+        $data['id'] = $id;
+        
+        $stmt = $db->prepare($sql);
+        $result = $stmt->execute($data);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Policy updated successfully!';
+            header('Location: /policies/' . $id . '/view');
+            exit;
+        } else {
+            $_SESSION['error'] = 'Failed to update policy';
+            header('Location: /policies/' . $id . '/edit');
+            exit;
+        }
+    } catch (Exception $e) {
+        $_SESSION['error'] = 'Error: ' . $e->getMessage();
+        header('Location: /policies/' . $id . '/edit');
+        exit;
+    }
+});
+
+// Policy delete route
+$router->post('/policies/{id}/delete', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $user_role = $_SESSION['user_role'];
+    $user_id = $_SESSION['user_id'];
+    
+    // Only admin and receptionist can delete policies
+    if ($user_role === 'agent') {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Access denied']);
+            exit;
+        }
+        $_SESSION['error'] = 'Access denied';
+        header('Location: /policies');
+        exit;
+    }
+    
+    // Get policy
+    $policy = $db->fetch("SELECT * FROM policies WHERE id = ?", [$id]);
+    
+    if (!$policy) {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Policy not found']);
+            exit;
+        }
+        $_SESSION['error'] = 'Policy not found';
+        header('Location: /policies');
+        exit;
+    }
+    
+    try {
+        // Delete the policy
+        $result = $db->execute("DELETE FROM policies WHERE id = ?", [$id]);
+        
+        if ($result) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'message' => 'Policy deleted successfully']);
+                exit;
+            }
+            $_SESSION['success'] = 'Policy deleted successfully';
+            header('Location: /policies');
+            exit;
+        } else {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Failed to delete policy']);
+                exit;
+            }
+            $_SESSION['error'] = 'Failed to delete policy';
+            header('Location: /policies');
+            exit;
+        }
+    } catch (Exception $e) {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            exit;
+        }
+        $_SESSION['error'] = 'Error: ' . $e->getMessage();
+        header('Location: /policies');
+        exit;
+    }
+});
+
+// Policy print route
+$router->get('/policies/{id}/print', function($id) {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $user_role = $_SESSION['user_role'];
+    $user_id = $_SESSION['user_id'];
+    
+    // Get policy with related data
+    $policy = $db->fetch("
+        SELECT p.*, 
+               c.name as customer_name, c.phone as customer_phone, c.email as customer_email,
+               c.address as customer_address, c.city as customer_city, c.state as customer_state,
+               c.pincode as customer_pincode, c.date_of_birth as customer_dob,
+               ic.name as company_name, ic.code as company_code,
+               pt.name as policy_type_name,
+               u.name as agent_name
+        FROM policies p 
+        LEFT JOIN customers c ON p.customer_id = c.id 
+        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id
+        LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
+        LEFT JOIN users u ON p.agent_id = u.id
+        WHERE p.id = ?
+    ", [$id]);
+    
+    if (!$policy) {
+        $_SESSION['error'] = 'Policy not found';
+        header('Location: /policies');
+        exit;
+    }
+    
+    // Role-based access control
+    if ($user_role === 'agent' && $policy['agent_id'] != $user_id) {
+        $_SESSION['error'] = 'Access denied';
+        header('Location: /policies');
+        exit;
+    }
+    
+    view('policies/print', [
+        'title' => 'Print Policy - ' . $policy['policy_number'],
+        'policy' => $policy
+    ]);
+});
+
+// Backward compatibility routes
+$router->get('/view-policy', function() {
+    $id = $_GET['id'] ?? '';
+    if ($id) {
+        header('Location: /policies/' . $id . '/view');
+        exit;
+    }
+    header('Location: /policies');
+    exit;
+});
+
+$router->get('/edit', function() {
+    $id = $_GET['id'] ?? '';
+    if ($id) {
+        header('Location: /policies/' . $id . '/edit');
+        exit;
+    }
+    header('Location: /policies');
+    exit;
+});
+
+$router->get('/print-policy', function() {
+    $id = $_GET['id'] ?? '';
+    if ($id) {
+        header('Location: /policies/' . $id . '/print');
+        exit;
+    }
+    header('Location: /policies');
+    exit;
 });
 
 $router->get('/customers', function() {
@@ -1357,6 +1713,92 @@ $router->get('/api/customers', function() {
     exit;
 });
 
+// API endpoint to check vehicle number for existing policies
+$router->get('/api/check-vehicle', function() {
+    requireAuth();
+    header('Content-Type: application/json');
+    
+    $vehicle_number = $_GET['vehicle_number'] ?? '';
+    
+    if (empty($vehicle_number)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Vehicle number is required']);
+        exit;
+    }
+    
+    try {
+        $db = Database::getInstance();
+        
+        // Check for existing policies with this vehicle number
+        $query = "
+            SELECT 
+                p.id,
+                p.policy_number,
+                p.policy_start_date,
+                p.policy_end_date,
+                p.premium_amount,
+                p.status,
+                p.vehicle_number,
+                p.vehicle_type,
+                p.coverage_type,
+                p.plan_name,
+                p.sum_assured,
+                p.commission_percentage,
+                c.name as customer_name,
+                c.phone as customer_phone,
+                c.email as customer_email,
+                c.address as customer_address,
+                c.date_of_birth as customer_dob,
+                c.gender as customer_gender,
+                c.occupation as customer_occupation,
+                ic.name as insurance_company_name,
+                ic.id as insurance_company_id,
+                pt.name as policy_type_name,
+                pt.id as policy_type_id,
+                pt.category as policy_category,
+                u.name as agent_name,
+                u.id as agent_id
+            FROM policies p
+            LEFT JOIN customers c ON p.customer_id = c.id
+            LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id
+            LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
+            LEFT JOIN users u ON p.agent_id = u.id
+            WHERE UPPER(p.vehicle_number) = UPPER(?)
+            ORDER BY p.policy_end_date DESC
+            LIMIT 1
+        ";
+        
+        $existingPolicy = $db->fetch($query, [$vehicle_number]);
+        
+        if ($existingPolicy) {
+            // Check if policy is expired or expiring soon
+            $endDate = new DateTime($existingPolicy['policy_end_date']);
+            $today = new DateTime();
+            $daysToExpiry = $today->diff($endDate)->days;
+            $isExpired = $endDate < $today;
+            
+            echo json_encode([
+                'exists' => true,
+                'policy' => $existingPolicy,
+                'is_expired' => $isExpired,
+                'days_to_expiry' => $isExpired ? -$daysToExpiry : $daysToExpiry,
+                'renewal_eligible' => true
+            ]);
+        } else {
+            echo json_encode([
+                'exists' => false,
+                'message' => 'No existing policy found for this vehicle number'
+            ]);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    }
+    
+    exit;
+});
+
 $router->get('/agent-login', function() {
     session_start();
     
@@ -1973,6 +2415,278 @@ $router->get('/settings', function() {
         'breadcrumbs' => [
             ['title' => 'Dashboard', 'url' => '/dashboard'],
             ['title' => 'Settings', 'url' => '/settings']
+        ]
+    ]);
+});
+
+// New Modal-based Policy Management Routes
+
+// Add Policy via Modal
+$router->post('/add-policy', function() {
+    requireAuth();
+    
+    try {
+        $db = Database::getInstance();
+        
+        // Validate required fields
+        $required_fields = ['category', 'vehicle_number', 'customer_phone', 'customer_name', 
+                           'insurance_company_id', 'vehicle_type', 'policy_start_date', 
+                           'premium', 'payout', 'customer_paid', 'business_type'];
+        
+        foreach ($required_fields as $field) {
+            if (empty($_POST[$field])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => "Field $field is required"]);
+                exit;
+            }
+        }
+        
+        // Check if policy document is uploaded
+        if (!isset($_FILES['policy_document']) || $_FILES['policy_document']['error'] !== UPLOAD_ERR_OK) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Policy document is required']);
+            exit;
+        }
+        
+        // Calculate dates
+        $policy_start_date = $_POST['policy_start_date'];
+        $policy_expiry_date = date('Y-m-d', strtotime($policy_start_date . ' +1 year'));
+        
+        // Calculate revenue
+        $premium = floatval($_POST['premium']);
+        $payout = floatval($_POST['payout']);
+        $customer_paid = floatval($_POST['customer_paid']);
+        $actual_amount = $premium - $payout;
+        $revenue = $actual_amount - $customer_paid;
+        
+        // Generate policy number
+        $policy_number = generatePolicyNumber();
+        
+        // Handle file uploads
+        $upload_dir = 'assets/uploads/policies/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        
+        $uploaded_files = [];
+        $file_fields = ['policy_document', 'rc_document', 'aadhar_card', 'pan_card'];
+        
+        foreach ($file_fields as $field) {
+            if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
+                $file_extension = pathinfo($_FILES[$field]['name'], PATHINFO_EXTENSION);
+                $filename = $policy_number . '_' . $field . '_' . time() . '.' . $file_extension;
+                $filepath = $upload_dir . $filename;
+                
+                if (move_uploaded_file($_FILES[$field]['tmp_name'], $filepath)) {
+                    $uploaded_files[$field] = $filename;
+                }
+            }
+        }
+        
+        // Check if customer exists or create new one
+        $customer = $db->fetch("SELECT id FROM customers WHERE phone = ?", [$_POST['customer_phone']]);
+        
+        if (!$customer) {
+            // Create new customer
+            $customer_id = $db->insert("
+                INSERT INTO customers (name, phone, email, created_at, updated_at) 
+                VALUES (?, ?, ?, NOW(), NOW())
+            ", [
+                $_POST['customer_name'],
+                $_POST['customer_phone'],
+                $_POST['customer_email'] ?? null
+            ]);
+        } else {
+            $customer_id = $customer['id'];
+        }
+        
+        // Insert policy
+        $policy_id = $db->insert("
+            INSERT INTO policies (
+                policy_number, customer_id, insurance_company_id, policy_type_id,
+                vehicle_number, vehicle_type, premium, policy_start_date, policy_expiry_date,
+                actual_amount, customer_paid, revenue, business_type,
+                policy_document, rc_document, aadhar_card, pan_card,
+                status, agent_id, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        ", [
+            $policy_number,
+            $customer_id,
+            $_POST['insurance_company_id'],
+            1, // Default motor insurance type
+            strtoupper($_POST['vehicle_number']),
+            $_POST['vehicle_type'],
+            $premium,
+            $policy_start_date,
+            $policy_expiry_date,
+            $actual_amount,
+            $customer_paid,
+            $revenue,
+            $_POST['business_type'],
+            $uploaded_files['policy_document'] ?? null,
+            $uploaded_files['rc_document'] ?? null,
+            $uploaded_files['aadhar_card'] ?? null,
+            $uploaded_files['pan_card'] ?? null,
+            'active',
+            $_SESSION['user_id']
+        ]);
+        
+        if ($policy_id) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Policy created successfully',
+                'policy_id' => $policy_number
+            ]);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Failed to create policy']);
+        }
+        
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+});
+
+// Search Vehicle for Modal
+$router->post('/search-vehicle', function() {
+    requireAuth();
+    
+    $vehicle_number = strtoupper($_POST['vehicle_number'] ?? '');
+    
+    if (empty($vehicle_number)) {
+        header('Content-Type: application/json');
+        echo json_encode(['found' => false]);
+        exit;
+    }
+    
+    $db = Database::getInstance();
+    
+    $policy = $db->fetch("
+        SELECT p.*, c.name as customer_name, c.phone as customer_phone, c.email as customer_email,
+               ic.name as company
+        FROM policies p
+        LEFT JOIN customers c ON p.customer_id = c.id
+        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id
+        WHERE p.vehicle_number = ?
+        ORDER BY p.created_at DESC
+        LIMIT 1
+    ", [$vehicle_number]);
+    
+    if ($policy) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'found' => true,
+            'data' => [
+                'customer_name' => $policy['customer_name'],
+                'customer_phone' => $policy['customer_phone'],
+                'customer_email' => $policy['customer_email'],
+                'last_policy_date' => date('d M Y', strtotime($policy['policy_start_date'])),
+                'company' => $policy['company']
+            ]
+        ]);
+    } else {
+        header('Content-Type: application/json');
+        echo json_encode(['found' => false]);
+    }
+});
+
+// Get Insurance Companies for Modal
+$router->get('/get-insurance-companies', function() {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $companies = $db->fetchAll("SELECT id, name FROM insurance_companies WHERE status = 'active' ORDER BY name");
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'companies' => $companies
+    ]);
+});
+
+// Get Business Types for Modal
+$router->get('/get-business-types', function() {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    
+    // Get agents
+    $agents = $db->fetchAll("SELECT id, name FROM users WHERE role = 'agent' AND status = 'active' ORDER BY name");
+    
+    $types = [];
+    
+    // Add admin options
+    $types[] = ['value' => 'admin_rajesh', 'label' => 'Admin Rajesh'];
+    
+    // Add agent options
+    foreach ($agents as $agent) {
+        $types[] = ['value' => 'agent_' . $agent['id'], 'label' => 'Agent: ' . $agent['name']];
+    }
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'types' => $types
+    ]);
+});
+
+// Current Month Policies Page
+$router->get('/policies/current-month', function() {
+    requireAuth();
+    
+    $db = Database::getInstance();
+    $user_role = $_SESSION['user_role'];
+    $user_id = $_SESSION['user_id'];
+    
+    // Get current month start and end dates
+    $month_start = date('Y-m-01');
+    $month_end = date('Y-m-t');
+    
+    // Build query based on user role
+    $whereClause = "WHERE p.created_at >= ? AND p.created_at <= ?";
+    $params = [$month_start . ' 00:00:00', $month_end . ' 23:59:59'];
+    
+    if ($user_role !== 'admin') {
+        $whereClause .= " AND p.agent_id = ?";
+        $params[] = $user_id;
+    }
+    
+    $policies = $db->fetchAll("
+        SELECT p.*, 
+               c.name as customer_name, c.phone as customer_phone,
+               ic.name as company_name, ic.code as company_code,
+               pt.name as policy_type_name,
+               u.name as agent_name
+        FROM policies p 
+        LEFT JOIN customers c ON p.customer_id = c.id 
+        LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
+        LEFT JOIN policy_types pt ON p.policy_type_id = pt.id 
+        LEFT JOIN users u ON p.agent_id = u.id 
+        $whereClause
+        ORDER BY p.created_at DESC
+    ", $params);
+    
+    // Calculate summary
+    $total_policies = count($policies);
+    $total_premium = array_sum(array_column($policies, 'premium'));
+    $total_revenue = array_sum(array_column($policies, 'revenue'));
+    
+    view('policies/current-month', [
+        'title' => 'Current Month Policies - Insurance Management System',
+        'current_page' => 'policies',
+        'policies' => $policies,
+        'summary' => [
+            'total_policies' => $total_policies,
+            'total_premium' => $total_premium,
+            'total_revenue' => $total_revenue,
+            'month_name' => date('F Y')
+        ],
+        'breadcrumbs' => [
+            ['title' => 'Dashboard', 'url' => '/dashboard'],
+            ['title' => 'Policies', 'url' => '/policies'],
+            ['title' => 'Current Month', 'url' => '/policies/current-month']
         ]
     ]);
 });

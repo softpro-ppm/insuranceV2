@@ -15,6 +15,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
     <!-- Custom CSS -->
     <style>
         :root {
@@ -111,10 +114,19 @@
             transform: translateX(5px);
         }
 
-        .nav-link.active {
-            background-color: rgba(255,255,255,0.2);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white !important;
+        }
+
+        .nav-link.btn-add-policy {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            margin: 0.2rem 0;
+        }
+
+        .nav-link.btn-add-policy:hover {
+            background: rgba(16, 185, 129, 0.3);
         }
 
         .nav-link i {
@@ -477,10 +489,25 @@
                 </a>
             </div>
             
+            <!-- Add Policy Button in Sidebar -->
+            <div class="nav-item">
+                <a href="#" class="nav-link btn-add-policy" onclick="openAddPolicyModal(); return false;">
+                    <i class="fas fa-plus-circle"></i>
+                    <span class="nav-text">Add Policy</span>
+                </a>
+            </div>
+            
             <div class="nav-item">
                 <a href="/policies" class="nav-link <?= ($current_page ?? '') === 'policies' ? 'active' : '' ?>">
                     <i class="fas fa-file-contract"></i>
-                    <span class="nav-text">Policies</span>
+                    <span class="nav-text">All Policies</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="/policies/current-month" class="nav-link <?= ($current_page ?? '') === 'current-month-policies' ? 'active' : '' ?>">
+                    <i class="fas fa-calendar-check"></i>
+                    <span class="nav-text">Current Month</span>
                 </a>
             </div>
             
@@ -547,7 +574,12 @@
                         <i class="fas fa-bars"></i>
                     </button>
                     
-                    <div class="breadcrumb-wrapper">
+                    <!-- Add Policy Button in Top Nav -->
+                    <button class="btn btn-primary btn-sm ms-3" id="addPolicyBtn" onclick="openAddPolicyModal()">
+                        <i class="fas fa-plus me-2"></i>Add Policy
+                    </button>
+                    
+                    <div class="breadcrumb-wrapper ms-3">
                         <?php if (isset($breadcrumbs) && !empty($breadcrumbs)): ?>
                             <nav aria-label="breadcrumb">
                                 <ol class="breadcrumb">
@@ -628,6 +660,9 @@
     <!-- jQuery (required for Select2) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
     <!-- Custom JavaScript -->
     <script>
         // Sidebar Toggle
@@ -665,6 +700,1173 @@
                 });
             });
         });
+
+        // Initialize Select2 for all select elements
+        $(document).ready(function() {
+            // Apply Select2 to all select elements except those with specific classes
+            $('select').each(function() {
+                const $select = $(this);
+                
+                // Skip if select has class 'no-select2'
+                if ($select.hasClass('no-select2')) {
+                    return;
+                }
+                
+                // Skip if select has onchange attribute (like DataTable filters)
+                if ($select.attr('onchange')) {
+                    return;
+                }
+                
+                // Skip DataTable filter selects and pagination selects
+                if ($select.hasClass('form-select') && 
+                    ($select.attr('name') === 'per_page' || $select.closest('.filters').length > 0)) {
+                    return;
+                }
+                
+                // Skip period filters and small utility selects
+                if ($select.attr('id') === 'periodFilter' || 
+                    $select.hasClass('form-select-sm')) {
+                    return;
+                }
+                
+                // Special handling for important dropdowns that need search even with few options
+                const isImportantSelect = $select.attr('id') === 'customer_id' || 
+                                        $select.attr('id') === 'insuranceCompany' || 
+                                        $select.attr('id') === 'agentSelect' ||
+                                        $select.hasClass('select2') ||
+                                        $select.data('placeholder');
+                
+                // Skip if select has fewer than 5 options AND it's not an important select
+                if (!isImportantSelect && $select.find('option').length < 5) {
+                    return;
+                }
+                
+                // Get placeholder from label or data-placeholder or use default
+                let placeholder = 'Select an option';
+                
+                // Check for data-placeholder attribute first
+                if ($select.data('placeholder')) {
+                    placeholder = $select.data('placeholder');
+                } else {
+                    // Try to get from associated label
+                    const label = $('label[for="' + $select.attr('id') + '"]');
+                    if (label.length > 0) {
+                        placeholder = 'Select ' + label.text().replace('*', '').trim().toLowerCase();
+                    }
+                }
+                
+                // Initialize Select2
+                $select.select2({
+                    placeholder: placeholder,
+                    allowClear: true,
+                    width: '100%',
+                    minimumResultsForSearch: 0, // Always show search box
+                    dropdownAutoWidth: true
+                });
+                
+                // Remove existing select2 class if present to avoid conflicts
+                $select.removeClass('select2');
+            });
+        });
+
+        // Universal Table Search Functionality
+        $(document).ready(function() {
+            initializeTableSearch();
+        });
+
+        function initializeTableSearch() {
+            // Find all tables that should have search functionality
+            $('table').each(function() {
+                const $table = $(this);
+                
+                // Skip tables with .no-search class
+                if ($table.hasClass('no-search')) {
+                    return;
+                }
+                
+                // Add searchable-table class if not present and table has tbody with rows
+                if (!$table.hasClass('searchable-table') && $table.find('tbody tr').length > 0) {
+                    $table.addClass('searchable-table');
+                }
+                
+                // Only process tables with searchable-table class
+                if (!$table.hasClass('searchable-table')) {
+                    return;
+                }
+                
+                // Generate unique ID for this table if it doesn't have one
+                let tableId = $table.attr('id');
+                if (!tableId) {
+                    tableId = 'table_' + Math.random().toString(36).substr(2, 9);
+                    $table.attr('id', tableId);
+                }
+                
+                // Check if search box already exists
+                if ($table.closest('.table-container').find('.table-search-box').length > 0) {
+                    return;
+                }
+                
+                // Wrap table in container if not already wrapped
+                if (!$table.closest('.table-container').length) {
+                    $table.wrap('<div class="table-container"></div>');
+                }
+                
+                const $container = $table.closest('.table-container');
+                
+                // Create search input
+                const searchHtml = `
+                    <div class="table-search-wrapper mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" 
+                                           class="form-control table-search-box" 
+                                           placeholder="Search in table..." 
+                                           data-table-id="${tableId}">
+                                    <button class="btn btn-outline-secondary table-search-clear" 
+                                            type="button" 
+                                            data-table-id="${tableId}" 
+                                            style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="table-search-info text-muted text-end">
+                                    <small class="search-results-info" data-table-id="${tableId}"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Insert search box before table
+                $container.prepend(searchHtml);
+                
+                // Add no-results row template (hidden by default)
+                const $tbody = $table.find('tbody');
+                const columnCount = $table.find('thead tr:first th').length || $table.find('tbody tr:first td').length;
+                const noResultsRow = `
+                    <tr class="table-no-results" style="display: none;">
+                        <td colspan="${columnCount}" class="text-center py-4">
+                            <div class="empty-state">
+                                <i class="fas fa-search fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No matching records found</p>
+                                <small class="text-muted">Try adjusting your search terms</small>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                $tbody.append(noResultsRow);
+            });
+            
+            // Bind search events
+            bindTableSearchEvents();
+        }
+
+        function bindTableSearchEvents() {
+            // Search input event
+            $(document).on('input', '.table-search-box', function() {
+                const $input = $(this);
+                const tableId = $input.data('table-id');
+                const searchTerm = $input.val().toLowerCase().trim();
+                const $clearBtn = $(`.table-search-clear[data-table-id="${tableId}"]`);
+                const $table = $(`#${tableId}`);
+                
+                // Show/hide clear button
+                if (searchTerm.length > 0) {
+                    $clearBtn.show();
+                } else {
+                    $clearBtn.hide();
+                }
+                
+                filterTable(tableId, searchTerm);
+            });
+            
+            // Clear search event
+            $(document).on('click', '.table-search-clear', function() {
+                const tableId = $(this).data('table-id');
+                const $input = $(`.table-search-box[data-table-id="${tableId}"]`);
+                
+                $input.val('');
+                $(this).hide();
+                filterTable(tableId, '');
+            });
+        }
+
+        function filterTable(tableId, searchTerm) {
+            const $table = $(`#${tableId}`);
+            const $tbody = $table.find('tbody');
+            const $rows = $tbody.find('tr:not(.table-no-results)');
+            const $noResultsRow = $tbody.find('.table-no-results');
+            const $resultInfo = $(`.search-results-info[data-table-id="${tableId}"]`);
+            
+            let visibleCount = 0;
+            const totalCount = $rows.length;
+            
+            if (searchTerm === '') {
+                // Show all rows
+                $rows.show();
+                $noResultsRow.hide();
+                visibleCount = totalCount;
+                $resultInfo.text('');
+            } else {
+                // Filter rows
+                $rows.each(function() {
+                    const $row = $(this);
+                    const rowText = $row.find('td').text().toLowerCase();
+                    
+                    if (rowText.includes(searchTerm)) {
+                        $row.show();
+                        visibleCount++;
+                    } else {
+                        $row.hide();
+                    }
+                });
+                
+                // Show/hide no results row
+                if (visibleCount === 0) {
+                    $noResultsRow.show();
+                    $resultInfo.text('No results found');
+                } else {
+                    $noResultsRow.hide();
+                    $resultInfo.text(`${visibleCount} of ${totalCount} records`);
+                }
+            }
+        }
+
+        // Function to reinitialize search for dynamically loaded tables
+        window.reinitializeTableSearch = function() {
+            initializeTableSearch();
+        };
+
+        // Function to add search to a specific table
+        window.addTableSearch = function(tableSelector) {
+            const $table = $(tableSelector);
+            if ($table.length && !$table.hasClass('no-search')) {
+                $table.addClass('searchable-table');
+                initializeTableSearch();
+            }
+        };
     </script>
+    
+    <!-- Select2 Bootstrap 5 Theme CSS -->
+    <style>
+        .select2-container {
+            width: 100% !important;
+        }
+        
+        .select2-container .select2-selection {
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            min-height: 38px;
+            font-size: 14px;
+        }
+        
+        .select2-container .select2-selection--single {
+            height: 38px;
+        }
+        
+        .select2-container .select2-selection--single .select2-selection__rendered {
+            padding-left: 12px;
+            padding-top: 8px;
+            line-height: 1.5;
+            color: var(--dark-color);
+        }
+        
+        .select2-container .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+            right: 10px;
+        }
+        
+        .select2-dropdown {
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            border-top: none;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+        
+        .select2-container--open .select2-selection {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+        }
+        
+        .select2-results__option--highlighted {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .select2-search--dropdown .select2-search__field {
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            padding: 6px 12px;
+        }
+        
+        .select2-container--disabled .select2-selection {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+        
+        /* Custom styles for select elements that already have select2 class */
+        .form-control.select2 {
+            display: none;
+        }
+        
+        /* Universal Table Search Styles */
+        .table-search-wrapper {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+        
+        .table-search-box {
+            border-radius: 0.375rem 0 0 0.375rem;
+        }
+        
+        .table-search-clear {
+            border-radius: 0 0.375rem 0.375rem 0;
+            border-left: 0;
+        }
+        
+        .table-search-info {
+            font-size: 0.875rem;
+        }
+        
+        .search-results-info {
+            font-weight: 500;
+            color: var(--primary-color) !important;
+        }
+        
+        .table-container .table {
+            margin-bottom: 0;
+        }
+        
+        .table-no-results .empty-state {
+            padding: 2rem 1rem;
+        }
+        
+        .table-no-results .empty-state i {
+            opacity: 0.5;
+        }
+        
+        /* Animation for filtering */
+        .table tbody tr {
+            transition: opacity 0.2s ease;
+        }
+        
+        .table tbody tr[style*="display: none"] {
+            opacity: 0;
+        }
+    </style>
+    
+    <!-- Add Policy Modal -->
+    <div class="modal fade" id="addPolicyModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        <span id="modalTitle">Add New Policy</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addPolicyForm" enctype="multipart/form-data">
+                        <!-- Step 1: Insurance Category -->
+                        <div id="step1" class="step-content">
+                            <h5 class="mb-4">
+                                <i class="fas fa-shield-alt text-primary me-2"></i>
+                                Step 1: Select Insurance Category
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="card insurance-category-card" data-category="motor">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-car fa-3x text-warning mb-3"></i>
+                                            <h5>Motor Insurance</h5>
+                                            <p class="text-muted">Vehicle insurance policies</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card insurance-category-card disabled" data-category="health">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-heartbeat fa-3x text-info mb-3"></i>
+                                            <h5>Health Insurance</h5>
+                                            <p class="text-muted">Coming Soon</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card insurance-category-card disabled" data-category="life">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                                            <h5>Life Insurance</h5>
+                                            <p class="text-muted">Coming Soon</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 2: Motor Insurance Form -->
+                        <div id="step2" class="step-content d-none">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5>
+                                    <i class="fas fa-car text-warning me-2"></i>
+                                    Motor Insurance Details
+                                </h5>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="goToStep1()">
+                                    <i class="fas fa-arrow-left me-2"></i>Back
+                                </button>
+                            </div>
+                            
+                            <!-- Vehicle Search Result -->
+                            <div id="vehicleSearchResult" class="d-none mb-4"></div>
+                            
+                            <div class="row g-3">
+                                <!-- Vehicle Number -->
+                                <div class="col-md-6">
+                                    <label for="vehicleNumber" class="form-label">
+                                        Vehicle Number <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="vehicleNumber" name="vehicle_number" 
+                                           placeholder="e.g., DL1CAB1234" required style="text-transform: uppercase;">
+                                </div>
+                                
+                                <!-- Customer Phone -->
+                                <div class="col-md-6">
+                                    <label for="customerPhone" class="form-label">
+                                        Customer Phone <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="tel" class="form-control" id="customerPhone" name="customer_phone" 
+                                           placeholder="10-digit mobile number" required maxlength="10" pattern="[0-9]{10}">
+                                </div>
+                                
+                                <!-- Customer Name -->
+                                <div class="col-md-6">
+                                    <label for="customerName" class="form-label">
+                                        Customer Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="customerName" name="customer_name" 
+                                           placeholder="Full name as per documents" required>
+                                </div>
+                                
+                                <!-- Email -->
+                                <div class="col-md-6">
+                                    <label for="customerEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="customerEmail" name="customer_email" 
+                                           placeholder="customer@example.com">
+                                </div>
+                                
+                                <!-- Insurance Company -->
+                                <div class="col-md-6">
+                                    <label for="insuranceCompany" class="form-label">
+                                        Insurance Company <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-control select2" id="insuranceCompany" name="insurance_company_id" required>
+                                        <option value="">Select Insurance Company</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Vehicle Type -->
+                                <div class="col-md-6">
+                                    <label for="vehicleType" class="form-label">
+                                        Vehicle Type <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-control" id="vehicleType" name="vehicle_type" required>
+                                        <option value="">Select Vehicle Type</option>
+                                        <option value="Comprehensive">Comprehensive (Full)</option>
+                                        <option value="Standalone OD">Standalone OD</option>
+                                        <option value="Third Party">Third Party</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Policy Start Date -->
+                                <div class="col-md-6">
+                                    <label for="policyStartDate" class="form-label">
+                                        Policy Start Date <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" class="form-control" id="policyStartDate" name="policy_start_date" required>
+                                </div>
+                                
+                                <!-- Policy Expiry Date -->
+                                <div class="col-md-6">
+                                    <label for="policyExpiryDate" class="form-label">
+                                        Policy Expiry Date <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" class="form-control" id="policyExpiryDate" name="policy_expiry_date" required readonly>
+                                </div>
+                                
+                                <!-- Premium -->
+                                <div class="col-md-4">
+                                    <label for="premium" class="form-label">
+                                        Premium <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" class="form-control" id="premium" name="premium" 
+                                               placeholder="0.00" required step="0.01" min="0">
+                                    </div>
+                                </div>
+                                
+                                <!-- Payout -->
+                                <div class="col-md-4">
+                                    <label for="payout" class="form-label">
+                                        Payout <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" class="form-control" id="payout" name="payout" 
+                                               placeholder="0.00" required step="0.01" min="0">
+                                    </div>
+                                </div>
+                                
+                                <!-- Customer Paid -->
+                                <div class="col-md-4">
+                                    <label for="customerPaid" class="form-label">
+                                        Customer Paid <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" class="form-control" id="customerPaid" name="customer_paid" 
+                                               placeholder="0.00" required step="0.01" min="0">
+                                    </div>
+                                </div>
+                                
+                                <!-- Revenue (Auto-calculated) -->
+                                <div class="col-md-6">
+                                    <label for="revenue" class="form-label">
+                                        Revenue (Auto-calculated)
+                                        <i class="fas fa-info-circle text-muted ms-1" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Formula: (Premium - Payout) - Customer Paid = Revenue"></i>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" class="form-control" id="revenue" name="revenue" 
+                                               placeholder="0.00" readonly step="0.01">
+                                    </div>
+                                    <small class="text-muted">Auto-calculated based on premium, payout, and customer payment</small>
+                                </div>
+                                
+                                <!-- Business Type -->
+                                <div class="col-md-6">
+                                    <label for="businessType" class="form-label">
+                                        Business Type <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-control select2" id="businessType" name="business_type" required>
+                                        <option value="">Select Business Type</option>
+                                        <option value="admin_rajesh">Admin Rajesh</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Document Uploads -->
+                            <div class="row g-3 mt-4">
+                                <div class="col-12">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-file-upload me-2"></i>Document Uploads
+                                    </h6>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6 class="text-secondary mb-3">Vehicle Documents</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="policyDocument" class="form-label">
+                                            Policy Document <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="file" class="form-control" id="policyDocument" name="policy_document" 
+                                               accept=".pdf,.jpg,.jpeg,.png" required>
+                                        <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="rcDocument" class="form-label">RC Document</label>
+                                        <input type="file" class="form-control" id="rcDocument" name="rc_document" 
+                                               accept=".pdf,.jpg,.jpeg,.png">
+                                        <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6 class="text-secondary mb-3">KYC Documents</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="aadharCard" class="form-label">Aadhar Card</label>
+                                        <input type="file" class="form-control" id="aadharCard" name="aadhar_card" 
+                                               accept=".pdf,.jpg,.jpeg,.png">
+                                        <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="panCard" class="form-label">PAN Card</label>
+                                        <input type="file" class="form-control" id="panCard" name="pan_card" 
+                                               accept=".pdf,.jpg,.jpeg,.png">
+                                        <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary d-none" id="submitPolicyBtn" onclick="submitPolicy()">
+                        <i class="fas fa-save me-2"></i>Submit Policy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Policy Modal Scripts -->
+    <script>
+        // Global variables
+        let selectedCategory = null;
+        
+        // Open Add Policy Modal
+        function openAddPolicyModal() {
+            $('#addPolicyModal').modal('show');
+            // Reset to step 1
+            goToStep1();
+            // Initialize Select2 dropdowns
+            setTimeout(function() {
+                initializeSelect2();
+            }, 300);
+        }
+        
+        // Initialize Select2 for dropdowns
+        function initializeSelect2() {
+            $('#insuranceCompany').select2({
+                placeholder: 'Select Insurance Company',
+                allowClear: true,
+                dropdownParent: $('#addPolicyModal')
+            });
+            
+            $('#businessType').select2({
+                placeholder: 'Select Business Type',
+                allowClear: true,
+                dropdownParent: $('#addPolicyModal')
+            });
+        }
+        
+        // Step navigation
+        function goToStep1() {
+            $('#step2').addClass('d-none');
+            $('#step1').removeClass('d-none');
+            $('#modalTitle').text('Add New Policy');
+            $('#submitPolicyBtn').addClass('d-none');
+            selectedCategory = null;
+        }
+        
+        function goToStep2(category) {
+            selectedCategory = category;
+            $('#step1').addClass('d-none');
+            $('#step2').removeClass('d-none');
+            $('#modalTitle').html('<i class="fas fa-car text-warning me-2"></i>Motor Insurance Details');
+            $('#submitPolicyBtn').removeClass('d-none');
+        }
+        
+        // Insurance category selection
+        $(document).on('click', '.insurance-category-card:not(.disabled)', function() {
+            const category = $(this).data('category');
+            if (category === 'motor') {
+                goToStep2('motor');
+            }
+        });
+        
+        // Vehicle number input handler
+        $(document).on('input', '#vehicleNumber', function() {
+            const vehicleNumber = $(this).val().toUpperCase();
+            $(this).val(vehicleNumber);
+            
+            // Clear any existing timeout
+            if (window.vehicleSearchTimeout) {
+                clearTimeout(window.vehicleSearchTimeout);
+            }
+            
+            if (vehicleNumber.length >= 5) {
+                // Show loading state
+                $('#vehicleSearchResult').html(`
+                    <div class="alert alert-info border-info">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-spinner fa-spin text-info me-3"></i>
+                            <span>Searching for existing policies...</span>
+                        </div>
+                    </div>
+                `).removeClass('d-none');
+                
+                // Debounce the search
+                window.vehicleSearchTimeout = setTimeout(function() {
+                    searchVehicle(vehicleNumber);
+                }, 500);
+            } else {
+                $('#vehicleSearchResult').addClass('d-none');
+            }
+        });
+        
+        // Search for existing vehicle
+        function searchVehicle(vehicleNumber) {
+            $.ajax({
+                url: '/search-vehicle',
+                method: 'POST',
+                data: { vehicle_number: vehicleNumber },
+                success: function(response) {
+                    if (response.found) {
+                        showVehicleFound(response.data);
+                    } else {
+                        hideVehicleResult();
+                    }
+                },
+                error: function() {
+                    hideVehicleResult();
+                }
+            });
+        }
+        
+        function showVehicleFound(data) {
+            const html = `
+                <div class="alert alert-warning border-warning">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle text-warning me-3"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">Vehicle Already Exists!</h6>
+                            <p class="mb-2">This vehicle number has existing policies:</p>
+                            <ul class="mb-2">
+                                <li><strong>Customer:</strong> ${data.customer_name} (${data.customer_phone})</li>
+                                <li><strong>Last Policy:</strong> ${data.last_policy_date}</li>
+                                <li><strong>Company:</strong> ${data.company}</li>
+                            </ul>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="fillCustomerData('${data.customer_name}', '${data.customer_phone}', '${data.customer_email || ''}')">
+                                <i class="fas fa-user-plus me-1"></i>Use Customer Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#vehicleSearchResult').html(html).removeClass('d-none');
+        }
+        
+        function hideVehicleResult() {
+            $('#vehicleSearchResult').addClass('d-none');
+        }
+        
+        function fillCustomerData(name, phone, email) {
+            $('#customerName').val(name);
+            $('#customerPhone').val(phone);
+            $('#customerEmail').val(email || '');
+        }
+        
+        // Customer phone validation
+        $(document).on('input', '#customerPhone', function() {
+            const phone = $(this).val().replace(/\D/g, '');
+            $(this).val(phone);
+            
+            // Add validation styling
+            if (phone.length === 10) {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            } else if (phone.length > 0) {
+                $(this).removeClass('is-valid').addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-valid is-invalid');
+            }
+        });
+        
+        // Policy date calculations
+        $(document).on('change', '#policyStartDate', function() {
+            const startDate = new Date($(this).val());
+            if (startDate) {
+                const expiryDate = new Date(startDate);
+                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                $('#policyExpiryDate').val(expiryDate.toISOString().split('T')[0]);
+            }
+        });
+        
+        // Revenue calculations
+        function calculateRevenue() {
+            const premium = parseFloat($('#premium').val()) || 0;
+            const payout = parseFloat($('#payout').val()) || 0;
+            const customerPaid = parseFloat($('#customerPaid').val()) || 0;
+            
+            const actualAmount = premium - payout;
+            const revenue = actualAmount - customerPaid;
+            
+            $('#revenue').val(revenue.toFixed(2));
+            
+            // Add visual feedback for revenue
+            const revenueField = $('#revenue');
+            revenueField.removeClass('text-success text-danger text-warning');
+            
+            if (revenue > 0) {
+                revenueField.addClass('text-success');
+            } else if (revenue < 0) {
+                revenueField.addClass('text-danger');
+            } else {
+                revenueField.addClass('text-warning');
+            }
+            
+            // Update actual amount display (you can add a field for this if needed)
+            console.log('Actual Amount (Premium - Payout):', actualAmount.toFixed(2));
+        }
+        
+        $(document).on('input', '#premium, #payout, #customerPaid', function() {
+            calculateRevenue();
+            
+            // Validate positive numbers
+            const value = parseFloat($(this).val());
+            if (value < 0) {
+                $(this).addClass('is-invalid');
+            } else if (value > 0) {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            } else {
+                $(this).removeClass('is-valid is-invalid');
+            }
+        });
+        
+        // Form submission
+        function submitPolicy() {
+            const form = document.getElementById('addPolicyForm');
+            
+            // Custom validation
+            let isValid = true;
+            let errorMessage = '';
+            
+            // Check required fields
+            const requiredFields = {
+                'vehicleNumber': 'Vehicle Number',
+                'customerPhone': 'Customer Phone',
+                'customerName': 'Customer Name',
+                'insuranceCompany': 'Insurance Company',
+                'vehicleType': 'Vehicle Type',
+                'policyStartDate': 'Policy Start Date',
+                'premium': 'Premium',
+                'payout': 'Payout',
+                'customerPaid': 'Customer Paid',
+                'businessType': 'Business Type'
+            };
+            
+            for (const [fieldId, fieldName] of Object.entries(requiredFields)) {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    isValid = false;
+                    errorMessage = `${fieldName} is required`;
+                    field.focus();
+                    break;
+                }
+            }
+            
+            // Validate phone number
+            const phone = $('#customerPhone').val();
+            if (phone.length !== 10) {
+                isValid = false;
+                errorMessage = 'Phone number must be 10 digits';
+                $('#customerPhone').focus();
+            }
+            
+            // Validate premium amounts
+            const premium = parseFloat($('#premium').val()) || 0;
+            const payout = parseFloat($('#payout').val()) || 0;
+            const customerPaid = parseFloat($('#customerPaid').val()) || 0;
+            
+            if (premium <= 0) {
+                isValid = false;
+                errorMessage = 'Premium must be greater than 0';
+                $('#premium').focus();
+            } else if (payout < 0) {
+                isValid = false;
+                errorMessage = 'Payout cannot be negative';
+                $('#payout').focus();
+            } else if (customerPaid < 0) {
+                isValid = false;
+                errorMessage = 'Customer Paid cannot be negative';
+                $('#customerPaid').focus();
+            }
+            
+            // Check file upload
+            const policyDocument = document.getElementById('policyDocument');
+            if (!policyDocument.files.length) {
+                isValid = false;
+                errorMessage = 'Policy document is required';
+                policyDocument.focus();
+            }
+            
+            if (!isValid) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: errorMessage
+                });
+                return;
+            }
+            
+            const formData = new FormData(form);
+            formData.append('category', selectedCategory);
+            
+            // Show loading
+            const submitBtn = $('#submitPolicyBtn');
+            const originalText = submitBtn.html();
+            submitBtn.html('<i class="fas fa-spinner fa-spin me-2"></i>Submitting...').prop('disabled', true);
+            
+            $.ajax({
+                url: '/add-policy',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Policy Added Successfully!',
+                            text: 'Policy has been created with ID: ' + response.policy_id,
+                            showConfirmButton: true
+                        }).then(() => {
+                            $('#addPolicyModal').modal('hide');
+                            // Redirect to policies page or reload
+                            if (window.location.href.includes('/policies')) {
+                                location.reload();
+                            } else {
+                                window.location.href = '/policies';
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message || 'Failed to add policy'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Failed to submit policy. Please try again.';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        errorMessage = response.message || errorMessage;
+                    } catch (e) {
+                        // Use default message
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMessage
+                    });
+                },
+                complete: function() {
+                    submitBtn.html(originalText).prop('disabled', false);
+                }
+            });
+        }
+        
+        // Reset form when modal is closed
+        $('#addPolicyModal').on('hidden.bs.modal', function() {
+            document.getElementById('addPolicyForm').reset();
+            goToStep1();
+            hideVehicleResult();
+            $('#revenue').val('');
+        });
+        
+        // Load insurance companies and business types on modal show
+        $('#addPolicyModal').on('show.bs.modal', function() {
+            loadInsuranceCompanies();
+            loadBusinessTypes();
+            
+            // Initialize tooltips
+            setTimeout(function() {
+                $('[data-bs-toggle="tooltip"]').tooltip();
+            }, 500);
+        });
+        
+        function loadInsuranceCompanies() {
+            $.ajax({
+                url: '/get-insurance-companies',
+                method: 'GET',
+                success: function(response) {
+                    const select = $('#insuranceCompany');
+                    select.empty().append('<option value="">Select Insurance Company</option>');
+                    
+                    if (response.success && response.companies) {
+                        response.companies.forEach(company => {
+                            select.append(`<option value="${company.id}">${company.name}</option>`);
+                        });
+                    }
+                }
+            });
+        }
+        
+        function loadBusinessTypes() {
+            $.ajax({
+                url: '/get-business-types',
+                method: 'GET',
+                success: function(response) {
+                    const select = $('#businessType');
+                    select.empty().append('<option value="">Select Business Type</option>');
+                    
+                    if (response.success && response.types) {
+                        response.types.forEach(type => {
+                            select.append(`<option value="${type.value}">${type.label}</option>`);
+                        });
+                    }
+                }
+            });
+        }
+    </script>
+    
+    <!-- Additional CSS for modal -->
+    <style>
+        .insurance-category-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .insurance-category-card:hover:not(.disabled) {
+            border-color: #007bff;
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        }
+        
+        .insurance-category-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .insurance-category-card.disabled .card-body {
+            color: #6c757d;
+        }
+        
+        .step-content {
+            min-height: 400px;
+        }
+        
+        .modal-xl {
+            max-width: 1140px;
+        }
+        
+        @media (max-width: 768px) {
+            .modal-xl {
+                max-width: 95%;
+            }
+        }
+        
+        .select2-container {
+            width: 100% !important;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+        }
+        
+        .input-group-text {
+            background-color: #f8f9fa;
+            border-color: #ced4da;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .text-danger {
+            color: #dc3545 !important;
+        }
+        
+        .btn-add-policy {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-add-policy:hover {
+            background: linear-gradient(45deg, #218838, #1e7e34);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+            color: white;
+        }
+        
+        /* Form validation styles */
+        .form-control.is-valid {
+            border-color: #198754;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.4-.4 1.4-1.4L6.7 2.3l.4.4-3 3z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 4.6 2.4 2.4M8.2 4.6l-2.4 2.4'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        /* Revenue field color coding */
+        #revenue.text-success {
+            color: #198754 !important;
+            font-weight: 600;
+        }
+        
+        #revenue.text-danger {
+            color: #dc3545 !important;
+            font-weight: 600;
+        }
+        
+        #revenue.text-warning {
+            color: #fd7e14 !important;
+            font-weight: 600;
+        }
+        
+        /* Vehicle search result styling */
+        .alert-warning .btn-outline-primary {
+            border-color: #0d6efd;
+            color: #0d6efd;
+        }
+        
+        .alert-warning .btn-outline-primary:hover {
+            background-color: #0d6efd;
+            color: white;
+        }
+        
+        /* Step indicator styling */
+        .step-content {
+            min-height: 400px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* File upload styling */
+        .form-control[type="file"]:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        /* Modal enhancements */
+        .modal-header {
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .modal-footer {
+            border-top: 2px solid #e9ecef;
+        }
+    </style>
+</script>
 </body>
 </html>

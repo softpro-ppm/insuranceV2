@@ -152,7 +152,7 @@
                     </div>
                 <?php else: ?>
                     <div class="table-responsive">
-                        <table class="table table-hover" id="renewalsTable">
+                        <table class="table table-hover searchable-table" id="renewalsTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>Priority</th>
