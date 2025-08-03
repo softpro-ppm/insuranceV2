@@ -43,11 +43,145 @@ $days_to_expiry = ceil((strtotime($expiry_date) - time()) / (60 * 60 * 24));
                         <p class="form-control-plaintext">
                             <?php
                             $status = $policy['status'];
-                            $badge_class = $status === 'active' ? 'success' : ($status === 'pending' ? 'warning' : 'danger');
-                            $icon = $status === 'active' ? 'check-circle' : ($status === 'pending' ? 'clock' : 'times-circle');
+                            $badge_class = $status === 'active' ? 'success' : ($status === 'expired' ? 'warning' : 'danger');
+                            $icon = $status === 'active' ? 'check-circle' : ($status === 'expired' ? 'clock' : 'times-circle');
                             ?>
                             <span class="badge bg-<?= $badge_class ?> fs-6">
                                 <i class="fas fa-<?= $icon ?> me-1"></i>
+                                <?= ucfirst($status) ?>
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Vehicle Number</label>
+                        <p class="form-control-plaintext"><?= htmlspecialchars($policy['vehicle_number'] ?? 'N/A') ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Vehicle Type</label>
+                        <p class="form-control-plaintext"><?= ucfirst(str_replace('_', ' ', $policy['vehicle_type'] ?? 'N/A')) ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Policy Start Date</label>
+                        <p class="form-control-plaintext"><?= date('d M, Y', strtotime($policy['policy_start_date'])) ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Policy End Date</label>
+                        <p class="form-control-plaintext">
+                            <?= date('d M, Y', strtotime($policy['policy_end_date'])) ?>
+                            <?php if ($days_to_expiry > 0): ?>
+                                <small class="text-muted">(<?= $days_to_expiry ?> days left)</small>
+                            <?php else: ?>
+                                <small class="text-danger">(Expired)</small>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Premium Amount</label>
+                        <p class="form-control-plaintext">₹<?= number_format($policy['premium_amount'], 2) ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Payout</label>
+                        <p class="form-control-plaintext">₹<?= number_format($policy['payout'] ?? 0, 2) ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Customer Paid</label>
+                        <p class="form-control-plaintext">₹<?= number_format($policy['customer_paid'] ?? 0, 2) ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Revenue</label>
+                        <p class="form-control-plaintext text-success fw-bold">₹<?= number_format($policy['revenue'] ?? 0, 2) ?></p>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label fw-bold">Business Type</label>
+                        <p class="form-control-plaintext"><?= htmlspecialchars($policy['business_type'] ?? 'N/A') ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Information -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    Customer Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Customer Code</label>
+                        <p class="form-control-plaintext"><?= htmlspecialchars($policy['customer_code'] ?? 'N/A') ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Customer Name</label>
+                        <p class="form-control-plaintext"><?= htmlspecialchars($policy['customer_name']) ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Phone</label>
+                        <p class="form-control-plaintext"><?= htmlspecialchars($policy['customer_phone']) ?></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Email</label>
+                        <p class="form-control-plaintext"><?= htmlspecialchars($policy['customer_email'] ?? 'N/A') ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Insurance Company -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-building me-2"></i>
+                    Insurance Company
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6><?= htmlspecialchars($policy['company_name'] ?? 'N/A') ?></h6>
+            </div>
+        </div>
+
+        <!-- Agent Information -->
+        <?php if (!empty($policy['agent_name'])): ?>
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-tie me-2"></i>
+                    Agent Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0"><?= htmlspecialchars($policy['agent_name']) ?></p>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Policy Documents -->
+        <?php if (!empty($policy['documents'])): ?>
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Documents
+                </h5>
+            </div>
+            <div class="card-body">
+                <?php foreach ($policy['documents'] as $doc): ?>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span><?= htmlspecialchars($doc['document_name']) ?></span>
+                    <a href="/download/<?= $doc['id'] ?>" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
                                 <?= ucfirst($status) ?>
                             </span>
                         </p>

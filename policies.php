@@ -141,7 +141,7 @@ exit();
     </div>
     <div class="card-body">
         <?php if (!empty($policies)): ?>
-            <div class="table-responsive">
+            <div class="table-responsive overflow-visible">
                 <table class="table table-hover">
                     <thead>
                         <tr>

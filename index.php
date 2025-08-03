@@ -369,7 +369,6 @@ $router->get('/policies', function() {
     
     // Get search and filter parameters
     $search = $_GET['search'] ?? '';
-    $category = $_GET['category'] ?? '';
     $status = $_GET['status'] ?? '';
     $company = $_GET['company'] ?? '';
     $page = max(1, (int)($_GET['page'] ?? 1));
@@ -401,14 +400,9 @@ $router->get('/policies', function() {
     // Receptionist and Admin see all policies
     
     if (!empty($search)) {
-        $where .= " AND (p.policy_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR ic.name LIKE ? OR p.premium_amount LIKE ? OR p.vehicle_number LIKE ? OR p.status LIKE ? OR p.category LIKE ?)";
+        $where .= " AND (p.policy_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR ic.name LIKE ? OR p.premium_amount LIKE ? OR p.vehicle_number LIKE ? OR p.status LIKE ?)";
         $searchTerm = '%' . $search . '%';
-        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
-    }
-    
-    if (!empty($category)) {
-        $where .= " AND p.category = ?";
-        $params[] = $category;
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
     }
     
     if (!empty($status)) {
@@ -421,8 +415,8 @@ $router->get('/policies', function() {
         $params[] = $company;
     }
     
-    // Valid sort columns
-    $valid_sorts = ['policy_number', 'customer_name', 'category', 'premium_amount', 'status', 'policy_start_date', 'created_at'];
+    // Valid sort columns - removed category reference
+    $valid_sorts = ['policy_number', 'customer_name', 'premium_amount', 'status', 'policy_start_date', 'created_at'];
     if (!in_array($sort, $valid_sorts)) {
         $sort = 'created_at';
     }
@@ -435,7 +429,7 @@ $router->get('/policies', function() {
     $sortColumn = $sort;
     if ($sort === 'customer_name') {
         $sortColumn = 'c.name';
-    } elseif ($sort !== 'policy_number' && $sort !== 'category' && $sort !== 'premium_amount' && $sort !== 'status' && $sort !== 'policy_start_date' && $sort !== 'created_at') {
+    } elseif ($sort !== 'policy_number' && $sort !== 'premium_amount' && $sort !== 'status' && $sort !== 'policy_start_date' && $sort !== 'created_at') {
         $sortColumn = 'p.created_at';
     } else {
         $sortColumn = 'p.' . $sort;
@@ -446,12 +440,10 @@ $router->get('/policies', function() {
         SELECT p.*, 
                c.name as customer_name, c.phone as customer_phone, c.email as customer_email,
                ic.name as company_name,
-               pt.name as policy_type_name,
                u.name as agent_name
         FROM policies p 
         LEFT JOIN customers c ON p.customer_id = c.id 
         LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id
-        LEFT JOIN policy_types pt ON p.policy_type_id = pt.id
         LEFT JOIN users u ON p.agent_id = u.id
         $where
         ORDER BY $sortColumn $order 
@@ -480,7 +472,6 @@ $router->get('/policies', function() {
         'policies' => $policies,
         'companies' => $companies,
         'search' => $search,
-        'category' => $category,
         'status' => $status,
         'company' => $company,
         'currentPage' => $page,
@@ -2440,8 +2431,8 @@ $router->post('/add-policy', function() {
         error_log("Add Policy Request: " . json_encode($_POST));
         error_log("Files received: " . json_encode(array_keys($_FILES)));
         
-        // Validate required fields
-        $required_fields = ['category', 'vehicleNumber', 'customerPhone', 'customerName', 
+        // Validate required fields - including financial fields
+        $required_fields = ['vehicleNumber', 'customerPhone', 'customerName', 
                            'insuranceCompany', 'vehicleType', 'policyStartDate', 
                            'premium', 'payout', 'customerPaid', 'businessType'];
         
@@ -2467,7 +2458,7 @@ $router->post('/add-policy', function() {
         $end_date->add(new DateInterval('P1Y'))->sub(new DateInterval('P1D')); // Add 1 year, subtract 1 day
         $policy_end_date = $end_date->format('Y-m-d');
         
-        // Calculate revenue: Customer Paid - (Premium - Payout)
+        // Financial calculations: Revenue = Customer Paid - (Premium - Payout)
         $premium = floatval($_POST['premium']);
         $payout = floatval($_POST['payout']);
         $customer_paid = floatval($_POST['customerPaid']);
@@ -2518,26 +2509,26 @@ $router->post('/add-policy', function() {
             $customer_id = $customer['id'];
         }
         
-        // Insert policy
-        // Insert policy (removed unsupported 'business_type' column)
-        // Insert policy with commission_amount instead of revenue, file documents handled separately
+        // Insert policy with financial calculations
         $db->execute("INSERT INTO policies (
-                policy_number, customer_id, insurance_company_id, policy_type_id, category,
-                vehicle_number, vehicle_type, premium_amount, policy_start_date, policy_end_date,
-                commission_amount, status, agent_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                policy_number, customer_id, insurance_company_id, vehicle_number, 
+                vehicle_type, premium_amount, payout, customer_paid, revenue, 
+                business_type, policy_start_date, policy_end_date,
+                status, agent_id, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
             [
                 $policy_number,
                 $customer_id,
                 $_POST['insuranceCompany'],
-                1, // Default motor insurance type
-                $_POST['category'],
                 strtoupper($_POST['vehicleNumber']),
                 $_POST['vehicleType'],
                 $premium,
+                $payout,
+                $customer_paid,
+                $revenue,
+                $_POST['businessType'],
                 $policy_start_date,
                 $policy_end_date,
-                $revenue,
                 'active',
                 $_SESSION['user_id']
             ]
@@ -2697,12 +2688,10 @@ $router->get('/policies/current-month', function() {
         SELECT p.*, 
                c.name as customer_name, c.phone as customer_phone,
                ic.name as company_name, ic.code as company_code,
-               pt.name as policy_type_name,
                u.name as agent_name
         FROM policies p 
         LEFT JOIN customers c ON p.customer_id = c.id 
         LEFT JOIN insurance_companies ic ON p.insurance_company_id = ic.id 
-        LEFT JOIN policy_types pt ON p.policy_type_id = pt.id 
         LEFT JOIN users u ON p.agent_id = u.id 
         $whereClause
         ORDER BY p.created_at DESC

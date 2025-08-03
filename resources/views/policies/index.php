@@ -38,28 +38,13 @@
                                     $statusClass = 'bg-secondary';
                             }
                             
-                            $categoryIcon = '';
-                            switch($policy['category']) {
-                                case 'motor':
-                                    $categoryIcon = 'fas fa-car';
-                                    break;
-                                case 'health':
-                                    $categoryIcon = 'fas fa-heartbeat';
-                                    break;
-                                case 'life':
-                                    $categoryIcon = 'fas fa-user-shield';
-                                    break;
-                                default:
-                                    $categoryIcon = 'fas fa-file-contract';
-                            }
-                            
                             return '<div class="d-flex align-items-center">
                                         <div class="avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center">
-                                            <i class="' . $categoryIcon . ' text-white"></i>
+                                            <i class="fas fa-car text-white"></i>
                                         </div>
                                         <div>
                                             <h6 class="mb-0">' . htmlspecialchars($policy['policy_number']) . '</h6>
-                                            <small class="text-muted">' . ucfirst($policy['category']) . ' Insurance</small>
+                                            <small class="text-muted">Motor Insurance</small>
                                             <span class="badge ' . $statusClass . ' ms-2">' . $statusText . '</span>
                                         </div>
                                     </div>';
@@ -83,20 +68,20 @@
                         'render' => function($policy) {
                             return '<div>
                                         <div class="fw-medium">' . htmlspecialchars($policy['company_name'] ?? 'Unknown') . '</div>
-                                        <small class="text-muted">' . htmlspecialchars($policy['policy_type_name'] ?? '') . '</small>
+                                        <small class="text-muted">Motor Insurance</small>
                                     </div>';
                         }
                     ],
                     [
                         'key' => 'premium_amount',
-                        'label' => 'Premium & Coverage',
+                        'label' => 'Premium & Revenue',
                         'sortable' => true,
                         'render' => function($policy) {
                             return '<div class="text-center">
                                         <div class="fw-bold text-primary">₹' . number_format($policy['premium_amount'], 2) . '</div>
                                         <small class="text-muted">Premium</small>
-                                        <div class="fw-bold text-success mt-1">₹' . number_format($policy['sum_insured'] ?? 0, 2) . '</div>
-                                        <small class="text-muted">Coverage</small>
+                                        <div class="fw-bold text-success mt-1">₹' . number_format($policy['revenue'] ?? 0, 2) . '</div>
+                                        <small class="text-muted">Revenue</small>
                                     </div>';
                         }
                     ],
@@ -157,18 +142,6 @@
                 ];
 
                 $filters = [
-                    [
-                        'type' => 'select',
-                        'name' => 'category',
-                        'label' => 'Category',
-                        'options' => [
-                            '' => 'All Categories',
-                            'motor' => 'Motor Insurance',
-                            'health' => 'Health Insurance',
-                            'life' => 'Life Insurance'
-                        ],
-                        'value' => $category
-                    ],
                     [
                         'type' => 'select',
                         'name' => 'status',

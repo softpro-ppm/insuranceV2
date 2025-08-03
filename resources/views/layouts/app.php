@@ -1129,9 +1129,6 @@
                                 </button>
                             </div>
                             
-                            <!-- Vehicle Search Result -->
-                            <div id="vehicleSearchResult" class="d-none mb-4"></div>
-                            
                             <div class="row g-3">
                                 <!-- Vehicle Number -->
                                 <div class="col-md-6">
@@ -1219,9 +1216,9 @@
                                 </div>
                                 
                                 <!-- Premium -->
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="premium" class="form-label">
-                                        Premium <span class="text-danger">*</span>
+                                        Premium Amount <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
@@ -1231,7 +1228,7 @@
                                 </div>
                                 
                                 <!-- Payout -->
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="payout" class="form-label">
                                         Payout <span class="text-danger">*</span>
                                     </label>
@@ -1243,7 +1240,7 @@
                                 </div>
                                 
                                 <!-- Customer Paid -->
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="customerPaid" class="form-label">
                                         Customer Paid <span class="text-danger">*</span>
                                     </label>
@@ -1258,32 +1255,21 @@
                                 <div class="col-md-6">
                                     <label for="revenue" class="form-label">
                                         Revenue (Auto-calculated)
-                                        <i class="fas fa-info-circle text-muted ms-1" 
-                                           data-bs-toggle="tooltip" 
-                                           title="Formula: (Premium - Payout) - Customer Paid = Revenue"></i>
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
                                         <input type="number" class="form-control" id="revenue" name="revenue" 
                                                placeholder="0.00" readonly step="0.01">
                                     </div>
-                                    <small class="text-muted">Auto-calculated based on premium, payout, and customer payment</small>
                                 </div>
                                 
                                 <!-- Business Type -->
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <label for="businessType" class="form-label">
                                         Business Type <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-control select2" id="businessType" name="businessType" required>
+                                    <select class="form-control" id="businessType" name="businessType" required>
                                         <option value="">Select Business Type</option>
-                                        <option value="admin_rajesh">Admin Rajesh</option>
-                                        <option value="agent_1">Agent: John Doe</option>
-                                        <option value="agent_2">Agent: Jane Smith</option>
-                                        <option value="agent_3">Agent: Mike Johnson</option>
-                                        <option value="direct_business">Direct Business</option>
-                                        <option value="referral">Referral</option>
-                                        <option value="online">Online</option>
                                     </select>
                                 </div>
                             </div>
@@ -1292,12 +1278,23 @@
                             <div class="row g-3 mt-4">
                                 <div class="col-12">
                                     <h6 class="text-primary mb-3">
-                                        <i class="fas fa-file-upload me-2"></i>Document Uploads
+                                        <i class="fas fa-file-upload me-2"></i>Document Uploads (Optional)
                                     </h6>
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <h6 class="text-secondary mb-3">Vehicle Documents</h6>
+                                    <label for="policyDocument" class="form-label">Policy Document</label>
+                                    <input type="file" class="form-control" id="policyDocument" name="policyDocument" 
+                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="otherDocument" class="form-label">Other Document</label>
+                                    <input type="file" class="form-control" id="otherDocument" name="otherDocument" 
+                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                </div>
+                            </div>
+                        </div>
                                     
                                     <div class="mb-3">
                                         <label for="policyDocument" class="form-label">
@@ -1341,6 +1338,9 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-2"></i>Cancel
                     </button>
+                    <button type="button" class="btn btn-warning" id="nextStepBtn" onclick="goToStep2('motor')" style="display: none;">
+                        <i class="fas fa-arrow-right me-2"></i>Next Step
+                    </button>
                     <button type="button" class="btn btn-primary d-none" id="submitPolicyBtn" onclick="submitPolicy()">
                         <i class="fas fa-save me-2"></i>Submit Policy
                     </button>
@@ -1356,7 +1356,9 @@
         
         // Open Add Policy Modal
         function openAddPolicyModal() {
-            $('#addPolicyModal').modal('show');
+            console.log('Opening Add Policy Modal...');
+            const modal = new bootstrap.Modal(document.getElementById('addPolicyModal'));
+            modal.show();
             // Reset to step 1
             goToStep1();
             // Initialize Select2 dropdowns
@@ -1364,6 +1366,34 @@
                 initializeSelect2();
             }, 300);
         }
+        
+        // Fix dropdown positioning for action buttons in tables
+        document.addEventListener('DOMContentLoaded', function() {
+            // Use Popper.js for proper dropdown positioning
+            const dropdowns = document.querySelectorAll('.dropdown-toggle');
+            dropdowns.forEach(function(dropdown) {
+                dropdown.addEventListener('click', function(e) {
+                    const dropdownMenu = this.nextElementSibling;
+                    if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
+                        // Calculate position
+                        const rect = this.getBoundingClientRect();
+                        const viewportHeight = window.innerHeight;
+                        const dropdownHeight = dropdownMenu.offsetHeight || 200;
+                        
+                        // Position dropdown above if it would go below viewport
+                        if (rect.bottom + dropdownHeight > viewportHeight) {
+                            dropdownMenu.style.top = (rect.top - dropdownHeight) + 'px';
+                            dropdownMenu.style.left = rect.left + 'px';
+                            dropdownMenu.classList.add('dropup');
+                        } else {
+                            dropdownMenu.style.top = rect.bottom + 'px';
+                            dropdownMenu.style.left = rect.left + 'px';
+                            dropdownMenu.classList.remove('dropup');
+                        }
+                    }
+                });
+            });
+        });
         
         // Initialize Select2 for dropdowns
         function initializeSelect2() {
@@ -1373,11 +1403,21 @@
                 dropdownParent: $('#addPolicyModal')
             });
             
+            // Initialize business type dropdown with Select2
             $('#businessType').select2({
                 placeholder: 'Select Business Type',
                 allowClear: true,
                 dropdownParent: $('#addPolicyModal')
             });
+            
+            // Load business types
+            loadBusinessTypes();
+            
+            // Initialize vehicle type dropdown (regular select, not Select2)
+            const vehicleTypeSelect = document.getElementById('vehicleType');
+            if (vehicleTypeSelect) {
+                vehicleTypeSelect.selectedIndex = 0; // Reset to first option
+            }
         }
         
         // Step navigation
@@ -1386,7 +1426,41 @@
             $('#step1').removeClass('d-none');
             $('#modalTitle').text('Add New Policy');
             $('#submitPolicyBtn').addClass('d-none');
+            $('#nextStepBtn').hide();
             selectedCategory = null;
+            
+            // Reset all form fields
+            document.getElementById('addPolicyForm').reset();
+            
+            // Clear Select2 selections
+            $('#insuranceCompany').val(null).trigger('change');
+            $('#businessType').val(null).trigger('change');
+            
+            // Reset vehicle type dropdown
+            const vehicleTypeSelect = document.getElementById('vehicleType');
+            if (vehicleTypeSelect) {
+                vehicleTypeSelect.selectedIndex = 0;
+            }
+        }
+        
+        // Load business types function
+        function loadBusinessTypes() {
+            fetch('/get-business-types')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const businessTypeSelect = $('#businessType');
+                        businessTypeSelect.empty();
+                        businessTypeSelect.append('<option value="">Select Business Type</option>');
+                        
+                        data.types.forEach(type => {
+                            businessTypeSelect.append(`<option value="${type.value}">${type.label}</option>`);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading business types:', error);
+                });
         }
         
         function goToStep2(category) {
@@ -1394,14 +1468,23 @@
             $('#step1').addClass('d-none');
             $('#step2').removeClass('d-none');
             $('#modalTitle').html('<i class="fas fa-car text-warning me-2"></i>Motor Insurance Details');
+            $('#nextStepBtn').hide();
             $('#submitPolicyBtn').removeClass('d-none');
         }
         
         // Insurance category selection
         $(document).on('click', '.insurance-category-card:not(.disabled)', function() {
             const category = $(this).data('category');
+            
+            // Remove selection from other cards
+            $('.insurance-category-card').removeClass('selected');
+            
+            // Add selection to clicked card
+            $(this).addClass('selected');
+            
             if (category === 'motor') {
-                goToStep2('motor');
+                selectedCategory = 'motor';
+                $('#nextStepBtn').show();
             }
         });
         
@@ -1549,6 +1632,7 @@
             });
         }
         
+        // Form validation for financial fields
         $(document).on('input', '#premium, #payout, #customerPaid', function() {
             calculateRevenue();
             
@@ -1574,7 +1658,7 @@
             
             console.log('selectedCategory:', selectedCategory);
             
-            // Check required fields
+            // Check required fields - including financial fields
             const requiredFields = {
                 'vehicleNumber': 'Vehicle Number',
                 'customerPhone': 'Customer Phone',
@@ -1947,13 +2031,81 @@
             box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
         }
         
-        /* Modal enhancements */
-        .modal-header {
-            border-bottom: 2px solid #e9ecef;
+        /* Modal z-index fix */
+        .modal {
+            z-index: 1055 !important;
         }
         
-        .modal-footer {
-            border-top: 2px solid #e9ecef;
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+        
+        /* Select2 dropdown z-index fix for modals */
+        .select2-container {
+            z-index: 1060 !important;
+        }
+        
+        .select2-dropdown {
+            z-index: 1061 !important;
+        }
+        
+        /* Dropdown overflow fix for tables with low height */
+        .table-responsive {
+            position: static !important;
+            overflow: visible !important;
+        }
+        
+        .dropdown-menu {
+            position: fixed !important;
+            z-index: 1060 !important;
+        }
+        
+        /* Ensure dropdowns appear above other elements */
+        .btn-group.show .dropdown-menu {
+            display: block;
+            position: fixed !important;
+            will-change: transform;
+            top: 0;
+            left: 0;
+            transform: translate3d(0, 0, 0);
+        }
+        
+        /* Modal backdrop fix */
+        .modal-backdrop.show {
+            opacity: 0.5;
+        }
+        
+        /* Ensure modal content is above backdrop */
+        .modal-dialog {
+            position: relative;
+            z-index: 1056;
+        }
+        
+        /* Insurance category card selection */
+        .insurance-category-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .insurance-category-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .insurance-category-card.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+        
+        .insurance-category-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .insurance-category-card.disabled:hover {
+            transform: none;
+            box-shadow: none;
         }
     </style>
 </script>
