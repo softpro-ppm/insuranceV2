@@ -662,6 +662,8 @@
     
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Custom JavaScript -->
     <script>
@@ -1192,9 +1194,11 @@
                                     </label>
                                     <select class="form-control" id="vehicleType" name="vehicleType" required>
                                         <option value="">Select Vehicle Type</option>
-                                        <option value="Comprehensive">Comprehensive (Full)</option>
-                                        <option value="Standalone OD">Standalone OD</option>
-                                        <option value="Third Party">Third Party</option>
+                                        <option value="two_wheeler">Two Wheeler</option>
+                                        <option value="car">Car</option>
+                                        <option value="commercial">Commercial</option>
+                                        <option value="tractor">Tractor</option>
+                                        <option value="others">Others</option>
                                     </select>
                                 </div>
                                 
@@ -1695,24 +1699,17 @@
                         Swal.fire({
                             icon: 'success',
                             title: 'Policy Added Successfully!',
-                            text: 'Policy has been created with ID: ' + response.policy_id,
-                            showConfirmButton: true
+                            text: `Policy has been created with ID: ${response.policy_id}`
                         }).then(() => {
-                            $('#addPolicyModal').modal('hide');
-                            // Redirect to policies page or reload
-                            if (window.location.href.includes('/policies')) {
-                                location.reload();
-                            } else {
-                                window.location.href = '/policies';
-                            }
+                            // Close the modal
+                            var addPolicyModal = document.getElementById('addPolicyModal');
+                            var modal = bootstrap.Modal.getInstance(addPolicyModal);
+                            modal.hide();
+                            // Refresh the page to update stats
+                            location.reload();
                         });
                     } else {
-                        console.error('Server returned error:', response);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: response.message || 'Failed to add policy'
-                        });
+                        Swal.fire('Error!', response.message, 'error');
                     }
                 },
                 error: function(xhr, status, error) {

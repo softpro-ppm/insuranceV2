@@ -219,29 +219,22 @@ exit();
                                 </span>
                             </td>
                             <td>
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
-                                        Actions
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-info" title="View Details" onclick="window.location.href='/policies/<?= $policy['id'] ?>/view'">
+                                        <i class="fas fa-eye"></i>
                                     </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="/policies/<?= $policy['id'] ?>/view">
-                                            <i class="fas fa-eye me-2"></i>View Details
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="/policies/<?= $policy['id'] ?>/edit">
-                                            <i class="fas fa-edit me-2"></i>Edit Policy
-                                        </a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="/renew?id=<?= $policy['id'] ?>">
-                                            <i class="fas fa-sync-alt me-2"></i>Renew Policy
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="/policies/<?= $policy['id'] ?>/print" target="_blank">
-                                            <i class="fas fa-print me-2"></i>Print Policy
-                                        </a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deletePolicy(<?= $policy['id'] ?>)">
-                                            <i class="fas fa-trash me-2"></i>Delete Policy
-                                        </a></li>
-                                    </ul>
+                                    <button class="btn btn-outline-secondary" title="Edit Policy" onclick="window.location.href='/policies/<?= $policy['id'] ?>/edit'">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-success" title="Renew Policy" onclick="window.location.href='/renew?id=<?= $policy['id'] ?>'">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary" title="Print Policy" onclick="window.open('/policies/<?= $policy['id'] ?>/print','_blank')">
+                                        <i class="fas fa-print"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" title="Delete Policy" onclick="deletePolicy(<?= $policy['id'] ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>

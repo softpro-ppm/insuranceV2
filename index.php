@@ -112,6 +112,14 @@ function generatePolicyNumber() {
     return $prefix . $year . $month . $random;
 }
 
+// Generate unique customer code
+function generateCustomerCode() {
+    $prefix = 'CUST';
+    $year = date('Y');
+    $random = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+    return $prefix . $year . $random;
+}
+
 // Initialize router
 $router = new Router();
 
@@ -2495,10 +2503,12 @@ $router->post('/add-policy', function() {
         
         if (!$customer) {
             // Create new customer
+            $customer_code = generateCustomerCode();
             $db->execute("
-                INSERT INTO customers (name, phone, email, created_at, updated_at) 
-                VALUES (?, ?, ?, NOW(), NOW())
+                INSERT INTO customers (customer_code, name, phone, email, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, NOW(), NOW())
             ", [
+                $customer_code,
                 $_POST['customerName'],
                 $_POST['customerPhone'],
                 $_POST['customerEmail'] ?? null
@@ -2509,33 +2519,55 @@ $router->post('/add-policy', function() {
         }
         
         // Insert policy
-        $db->execute("
-            INSERT INTO policies (
+        // Insert policy (removed unsupported 'business_type' column)
+        // Insert policy with commission_amount instead of revenue, file documents handled separately
+        $db->execute("INSERT INTO policies (
                 policy_number, customer_id, insurance_company_id, policy_type_id, category,
                 vehicle_number, vehicle_type, premium_amount, policy_start_date, policy_end_date,
-                revenue, business_type, policy_document, rc_document, aadhar_card, pan_card,
-                status, agent_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-        ", [
-            $policy_number,
-            $customer_id,
-            $_POST['insuranceCompany'],
-            1, // Default motor insurance type
-            $_POST['category'],
-            strtoupper($_POST['vehicleNumber']),
-            $_POST['vehicleType'],
-            $premium,
-            $policy_start_date,
-            $policy_end_date,
-            $revenue,
-            $_POST['businessType'],
-            $uploaded_files['policyDocument'] ?? null,
-            $uploaded_files['rcDocument'] ?? null,
-            $uploaded_files['aadharCard'] ?? null,
-            $uploaded_files['panCard'] ?? null,
-            'active',
-            $_SESSION['user_id']
-        ]);
+                commission_amount, status, agent_id, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+            [
+                $policy_number,
+                $customer_id,
+                $_POST['insuranceCompany'],
+                1, // Default motor insurance type
+                $_POST['category'],
+                strtoupper($_POST['vehicleNumber']),
+                $_POST['vehicleType'],
+                $premium,
+                $policy_start_date,
+                $policy_end_date,
+                $revenue,
+                'active',
+                $_SESSION['user_id']
+            ]
+        );
+        $policy_id = $db->lastInsertId();
+        // Save uploaded documents to policy_documents table
+        if ($policy_id && !empty($uploaded_files)) {
+            foreach ($uploaded_files as $field => $filename) {
+                $docTypeMap = [
+                    'policyDocument' => 'policy_document',
+                    'rcDocument'     => 'rc_document',
+                    'aadharCard'     => 'aadhar_card',
+                    'panCard'        => 'pan_card'
+                ];
+                if (!isset($docTypeMap[$field])) continue;
+                $docType = $docTypeMap[$field];
+                $filePath = $upload_dir . $filename;
+                $db->execute(
+                    "INSERT INTO policy_documents (policy_id, document_type, document_name, file_path, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)",
+                    [
+                        $policy_id,
+                        $docType,
+                        $filename,
+                        $filePath,
+                        file_exists($filePath) ? filesize($filePath) : 0,
+                        $_SESSION['user_id']
+                    ]
+                );
+            }
+        }
         
         $policy_id = $db->lastInsertId();
         
