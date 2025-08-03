@@ -1,7 +1,4 @@
-<!-- Page Header -->
-<div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
-</div>
+
 
 <!-- A. Enhanced Statistics Cards -->
 <div class="row g-3 mb-3">
